@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Uganda CPI Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #0a0f1e;
+  --bg2: #0f1628;
+  --bg3: #141b35;
+  --card: #111827;
+  --border: #1e2d4a;
+  --accent: #f5a623;
+  --accent2: #e84b4b;
+  --accent3: #4bade8;
+  --accent4: #4be8a0;
+  --text: #e8edf5;
+  --muted: #6b7a9b;
+  --gold: #f5a623;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, #0a0f1e 0%, #0d1530 50%, #0a1a2e 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 28px 40px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.header-left h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.header-left h1 span { color: var(--gold); }
+.header-left p {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 6px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.header-kpis {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.kpi {
+  text-align: right;
+  min-width: 120px;
+}
+.kpi-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 3px;
+}
+.kpi-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.kpi-value.red { color: var(--accent2); }
+.kpi-value.blue { color: var(--accent3); }
+
+/* ── NAV ── */
+.nav {
+  display: flex;
+  gap: 4px;
+  padding: 16px 40px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.nav-btn:hover { border-color: var(--gold); color: var(--gold); }
+.nav-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-weight: 700;
+}
+
+/* ── MAIN ── */
+.main { padding: 28px 40px; max-width: 1600px; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.span-2 { grid-column: span 2; }
+
+/* ── CARD ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.card.blue::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+.card.green::before { background: linear-gradient(90deg, var(--accent4), transparent); }
+.card.red::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+
+.card-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 14px;
+}
+.card-title span {
+  color: var(--gold);
+}
+
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap.tall { height: 340px; }
+.chart-wrap.xl { height: 420px; }
+
+/* ── INSIGHT BOX ── */
+.insight {
+  background: #0d1a2e;
+  border-left: 3px solid var(--gold);
+  padding: 12px 16px;
+  margin-top: 14px;
+  border-radius: 0 4px 4px 0;
+}
+.insight.blue { border-left-color: var(--accent3); }
+.insight.green { border-left-color: var(--accent4); }
+.insight.red { border-left-color: var(--accent2); }
+.insight p {
+  font-size: 12.5px;
+  color: #b0bdd4;
+  line-height: 1.6;
+}
+.insight strong { color: var(--gold); }
+.insight.blue strong { color: var(--accent3); }
+.insight.green strong { color: var(--accent4); }
+.insight.red strong { color: var(--accent2); }
+
+/* ── DRIVER TABLE ── */
+.driver-table { width: 100%; border-collapse: collapse; }
+.driver-table th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.driver-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(30,45,74,0.5);
+  vertical-align: middle;
+}
+.driver-table tr:last-child td { border-bottom: none; }
+.cat-name { font-size: 13px; font-weight: 500; }
+.cat-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+.essential { background: rgba(75,232,160,0.15); color: var(--accent4); }
+.discretionary { background: rgba(75,173,232,0.15); color: var(--accent3); }
+.bar-cell { padding-left: 12px; }
+.mini-bar-bg {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 80px;
+}
+.mini-bar {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.pct-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 8px;
+}
+
+/* ── CALCULATOR ── */
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.calc-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+}
+.calc-item label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 8px;
+}
+.calc-item input, .calc-item select {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+.calc-item input:focus, .calc-item select:focus {
+  border-color: var(--gold);
+}
+.calc-result {
+  background: linear-gradient(135deg, #0f1e35, #1a2a45);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 4px;
+}
+.calc-result .big-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.calc-result .sub-label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+  font-family: 'Space Mono', monospace;
+}
+.calc-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.calc-chip {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+}
+.calc-chip .chip-cat { color: var(--muted); font-size: 10px; display: block; margin-bottom: 2px; }
+.calc-chip .chip-val { color: var(--gold); }
+
+/* ── TOGGLE ── */
+.toggle-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.toggle-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: all 0.2s;
+}
+.toggle-btn.active-e { background: rgba(75,232,160,0.1); border-color: var(--accent4); color: var(--accent4); }
+.toggle-btn.active-d { background: rgba(75,173,232,0.1); border-color: var(--accent3); color: var(--accent3); }
+.toggle-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── FORECAST LEGEND ── */
+.forecast-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+}
+.legend-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+
+/* ── ANNOTATIONS ── */
+.ann-list { list-style: none; }
+.ann-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(30,45,74,0.5);
+  font-size: 12.5px;
+}
+.ann-list li:last-child { border-bottom: none; }
+.ann-date {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--gold);
+  min-width: 70px;
+  padding-top: 1px;
+}
+.ann-text { color: #b0bdd4; line-height: 1.5; }
+
+/* ── SECTION TITLE ── */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.section-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+}
+.section-header span {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+@media (max-width: 900px) {
+  .header { padding: 20px; }
+  .nav { padding: 12px 20px; }
+  .main { padding: 20px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+  .header-kpis { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <h1>Uganda <span>CPI Intelligence</span> Dashboard</h1>
+    <p>UBOS Data &bull; July 2017 – January 2026 &bull; 103 Months &bull; 13 Categories</p>
+  </div>
+  <div class="header-kpis">
+    <div class="kpi">
+      <div class="kpi-label">CPI Jan 2026</div>
+      <div class="kpi-value" id="hdr-cpi">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Annual Inflation</div>
+      <div class="kpi-value red" id="hdr-annual">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total CPI Growth</div>
+      <div class="kpi-value blue" id="hdr-growth">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Basket Cost↑ UGX</div>
+      <div class="kpi-value" id="hdr-burden">—</div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
+  <button class="nav-btn" onclick="showSection('drivers')">Inflation Drivers</button>
+  <button class="nav-btn" onclick="showSection('calculator')">Household Calculator</button>
+  <button class="nav-btn" onclick="showSection('essential')">Essential vs Discretionary</button>
+  <button class="nav-btn" onclick="showSection('forecast')">Forecast</button>
+</nav>
+
+<div class="main">
+
+<!-- ──────────── OVERVIEW ──────────── -->
+<section class="section active" id="s-overview">
+  <div class="section-header">
+    <h2>Headline Inflation Overview</h2>
+    <span>2017–2026</span>
+  </div>
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-title">Headline CPI Index &amp; Annual Inflation Rate — <span>103 months</span></div>
+      <div class="chart-wrap tall"><canvas id="c-headline"></canvas></div>
+      <div class="insight">
+        <p>Uganda's CPI rose from <strong>102.3 (Jul 2017)</strong> to <strong>138.6 (Jan 2026)</strong> — a <strong>35.5% cumulative increase</strong> over 8.5 years. Inflation peaked at <strong>10.7% in Oct 2022</strong>, driven by the post-COVID energy crisis and UGX depreciation, before easing to <strong>3.2% by Jan 2026</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card blue">
+      <div class="card-title">Monthly % Change — <span>Volatility</span></div>
+      <div class="chart-wrap"><canvas id="c-monthly"></canvas></div>
+      <div class="insight blue"><p>Monthly inflation averaged <strong>+0.34%</strong>. Largest single-month jump: <strong>+1.51% in Oct 2022</strong>. Two brief deflationary months occurred in <strong>Jul 2020</strong> and <strong>Nov 2020</strong> (COVID demand shock).</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">All 13 Categories CPI — <span>Spaghetti Chart</span></div>
+      <div class="chart-wrap"><canvas id="c-spaghetti"></canvas></div>
+      <div class="insight"><p><strong>Transport</strong> (161.2) and <strong>Education</strong> (155.5) show the steepest cumulative gains. <strong>Information & Communication</strong> is the only category that <em>deflated</em> from its 2017 baseline.</p></div>
+    </div>
+    <div class="card red">
+      <div class="card-title">Key Inflation Events</div>
+      <ul class="ann-list" style="margin-top:4px;">
+        <li><span class="ann-date">2020-03</span><span class="ann-text">COVID-19 lockdowns. Food supply chains disrupted. Transport halted.</span></li>
+        <li><span class="ann-date">2020-07</span><span class="ann-text">Deflation: -0.18%. First negative monthly reading since 2017.</span></li>
+        <li><span class="ann-date">2021-03</span><span class="ann-text">Education shock: schools reopened after 2yr closure; fees spiked.</span></li>
+        <li><span class="ann-date">2022-03</span><span class="ann-text">Russia-Ukraine war. Global fuel &amp; food prices surged sharply.</span></li>
+        <li><span class="ann-date">2022-10</span><span class="ann-text">Inflation peak: 10.71%. UGX hit record lows vs USD.</span></li>
+        <li><span class="ann-date">2023-06</span><span class="ann-text">Disinflation begins. Commodity prices normalised globally.</span></li>
+        <li><span class="ann-date">2026-01</span><span class="ann-text">Current: 3.16% — near-stable. Education &amp; Insurance still elevated.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── DRIVERS ──────────── -->
+<section class="section" id="s-drivers">
+  <div class="section-header">
+    <h2>Inflation Drivers</h2>
+    <span>Weighted Contribution to Headline CPI</span>
+  </div>
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-title">Inflation Contribution — <span>Jan 2026 Annual (Jan 2025 → Jan 2026)</span></div>
+      <table class="driver-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Annual %</th>
+            <th>Weight /1000</th>
+            <th style="width:140px">Contribution</th>
+            <th style="text-align:right">Points</th>
+          </tr>
+        </thead>
+        <tbody id="driver-tbody"></tbody>
+      </table>
+      <div class="insight">
+        <p><strong>Food & Non-Alcoholic Beverages</strong> dominates with a weight of 270.5/1000 — its 3.0% annual rate alone contributes <strong>0.82 points</strong> to headline inflation. Despite <strong>Insurance & Financial Services</strong> inflating at 12.4%, its small weight (22.8) limits its headline impact. <strong>Education</strong> at 7.6% with a mid-range weight is the second biggest contributor.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Drivers — <span>Cumulative CPI Growth Since 2017</span></div>
+      <div class="chart-wrap tall"><canvas id="c-cumulative-bar"></canvas></div>
+    </div>
+    <div class="card blue">
+      <div class="card-title">Category Annual Inflation Over Time — <span>Stacked Area</span></div>
+      <div class="chart-wrap tall"><canvas id="c-category-trend"></canvas></div>
+      <div class="insight blue"><p>The 2022 peak was driven by <strong>Transport</strong> (+22% annual) and <strong>Food</strong> (+11%). Post-2023 disinflation saw Transport and Food cool significantly while <strong>Education</strong> and <strong>Insurance</strong> remained stubbornly elevated.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── CALCULATOR ──────────── -->
+<section class="section" id="s-calculator">
+  <div class="section-header">
+    <h2>Household Cost Calculator</h2>
+    <span>Real UGX Burden Since July 2017</span>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Configure Your Monthly Basket</div>
+    <div class="calc-grid">
+      <div class="calc-item">
+        <label>Monthly Basket (UGX)</label>
+        <input type="number" id="basket-input" value="800000" step="50000" min="100000"/>
+      </div>
+      <div class="calc-item">
+        <label>Compare From</label>
+        <select id="from-date"></select>
+      </div>
+      <div class="calc-item">
+        <label>Compare To</label>
+        <select id="to-date"></select>
+      </div>
+    </div>
+    <button onclick="calcBurden()" style="background:var(--gold);color:#000;border:none;padding:10px 28px;border-radius:4px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;margin-top:4px;">Calculate</button>
+  </div>
+  <div class="calc-result" id="calc-result">
+    <div class="big-num" id="calc-extra">—</div>
+    <div class="sub-label" id="calc-label">Additional UGX needed per month</div>
+    <div style="color:#b0bdd4;font-size:13px;margin-top:8px;" id="calc-pct-text">—</div>
+    <div class="calc-breakdown" id="calc-chips"></div>
+  </div>
+  <div class="grid-2" style="margin-top:20px">
+    <div class="card green">
+      <div class="card-title">Total Extra UGX Paid Per Month — <span>800K Basket Baseline</span></div>
+      <div class="chart-wrap tall"><canvas id="c-burden"></canvas></div>
+      <div class="insight green"><p>A household spending <strong>UGX 800,000/month</strong> in July 2017 now needs <strong>UGX 1,084,000/month</strong> for the same basket — an extra <strong>UGX 283,860</strong> per month by January 2026. That's <strong>UGX 3.4 million more per year</strong>.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Category Contribution to Extra Cost — <span>Jan 2026 vs Jul 2017</span></div>
+      <div class="chart-wrap tall"><canvas id="c-burden-breakdown"></canvas></div>
+      <div class="insight"><p><strong>Food</strong> accounts for <strong>UGX 73,745</strong> of the extra monthly spend. <strong>Education</strong> adds <strong>UGX 23,713</strong> and <strong>Transport UGX 48,853</strong>. Only <strong>Information & Communication</strong> provides a small saving of <strong>UGX 190</strong>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── ESSENTIAL ──────────── -->
+<section class="section" id="s-essential">
+  <div class="section-header">
+    <h2>Essential vs Discretionary</h2>
+    <span>Inflation Comparison by Spending Type</span>
+  </div>
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-title">Annual Inflation: Essential Goods vs Discretionary Spending — <span>2018–2026</span></div>
+      <div class="toggle-wrap">
+        <button class="toggle-btn active-e" onclick="toggleEssential()">Essential (Food, Housing, Health, Education, Transport)</button>
+        <button class="toggle-btn active-d" onclick="toggleDiscretionary()">Discretionary (Clothing, Recreation, Insurance, etc.)</button>
+      </div>
+      <div class="chart-wrap xl"><canvas id="c-essdisc"></canvas></div>
+      <div class="insight">
+        <p>The data shows a <strong>nuanced story</strong>: during normal periods (2017–2021), discretionary goods actually inflated slightly faster than essentials. But during the 2022–2023 crisis, <strong>essential goods spiked sharply higher</strong> — reaching <strong>10.1% vs 6.3%</strong> for discretionary in late 2022. Since 2024, both groups have converged around <strong>4–5%</strong>, with essentials remaining slightly elevated due to stubborn education costs.</p>
+      </div>
+    </div>
+    <div class="card green">
+      <div class="card-title">Essential Categories — <span>Cumulative CPI Growth</span></div>
+      <div class="chart-wrap tall"><canvas id="c-ess-cats"></canvas></div>
+    </div>
+    <div class="card blue">
+      <div class="card-title">Discretionary Categories — <span>Cumulative CPI Growth</span></div>
+      <div class="chart-wrap tall"><canvas id="c-disc-cats"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-title">Average Annual Inflation — <span>Full Period Summary by Group</span></div>
+      <div id="summary-table" style="margin-top:8px;overflow-x:auto;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── FORECAST ──────────── -->
+<section class="section" id="s-forecast">
+  <div class="section-header">
+    <h2>CPI Forecast</h2>
+    <span>Linear Trend Projection — Feb 2026 to Jan 2027</span>
+  </div>
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-title">Uganda Headline CPI — <span>Historical + 12-Month Forecast</span></div>
+      <div class="forecast-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Historical CPI (Jul 2017–Jan 2026)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div> Forecast (Feb 2026–Jan 2027)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(75,173,232,0.2);border:1px dashed var(--accent3)"></div> Forecast Band ±2%</div>
+      </div>
+      <div class="chart-wrap xl"><canvas id="c-forecast"></canvas></div>
+      <div class="insight blue">
+        <p>Using a <strong>linear trend model</strong> fitted on 24 months of data (Feb 2024–Jan 2026), Uganda's headline CPI is projected to reach <strong>143.2 by January 2027</strong>. This implies an annual inflation rate of approximately <strong>3.0–3.5%</strong> through 2026 — assuming no major external shocks. Key risks include <strong>UGX depreciation, global oil price volatility, and a potential El Niño food supply shock</strong>.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Forecast Values — <span>Month by Month</span></div>
+      <table class="driver-table" id="forecast-table"></table>
+    </div>
+    <div class="card red">
+      <div class="card-title">Model Assumptions &amp; Limitations</div>
+      <ul class="ann-list" style="margin-top:4px;">
+        <li><span class="ann-date">Method</span><span class="ann-text">Linear trend fitted on last 24 months of CPI data (OLS regression).</span></li>
+        <li><span class="ann-date">R² Value</span><span class="ann-text">~0.98 on training data; high fit due to dominant upward trend.</span></li>
+        <li><span class="ann-date">Limitation 1</span><span class="ann-text">Does not capture seasonality or sudden structural breaks (wars, pandemics).</span></li>
+        <li><span class="ann-date">Limitation 2</span><span class="ann-text">Forecast band (±2%) reflects historical monthly volatility, not statistical confidence intervals.</span></li>
+        <li><span class="ann-date">Improvement</span><span class="ann-text">An ARIMA or Prophet model would better capture seasonal patterns. Recommended for final project submission.</span></li>
+        <li><span class="ann-date">Data</span><span class="ann-text">Source: Uganda Bureau of Statistics (UBOS), CPI January 2026 release.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div><!-- end main -->
+
+<script>
+const D = {"dates":["2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01"],"grand_total":[102.28391511657036,102.54297221882636,103.2125114776846,103.51145545502249,103.58478206581142,103.83570148135026,103.68797140845732,104.03006245673875,104.32732287263012,104.84004698149397,105.49991009161657,105.06293223675566,105.41828888092226,105.82032106192561,106.53382345526465,106.4280950544283,106.41729255144205,106.25370103359307,106.36164381188317,106.19210774270157,107.028433651355,107.38517509651453,107.72187492799041,107.3233748681979,107.2697805818003,107.79099377031322,108.4587351579904,108.52560044113743,108.51446002752097,108.77207508722671,109.12111025286382,109.34000581407275,109.2076448477063,110.18703347922153,110.58106743056192,110.94713759481999,110.7430677711273,110.99647596746617,111.33573306423071,111.81295228223223,111.23864134486327,111.44244143792007,111.30949732367691,111.84558495945438,112.17148684288642,112.49424345946665,112.66774353230562,113.14308445463632,113.10048137244225,113.06379181599249,113.73520885577828,113.92818841152044,114.13373469223122,114.6520844337479,114.29872210959509,115.41859406121301,116.37670992653587,117.97752689142716,119.72445540542479,120.88250917453117,122.03627889061478,123.24353072904623,125.10202610329688,126.13083369408952,126.2136556355559,126.38398885651827,126.19160728548135,126.04309300495795,126.86679743866817,127.46711087984401,127.12840644465746,126.7942056138964,126.76068780803445,127.51285923116089,128.45665048587617,129.20271519311828,129.5031682867408,129.67235286666957,129.70828378912393,130.36792441099686,131.03433848675428,131.5305739605117,131.727872827432,131.7719231399003,131.77650511474374,132.01611475809196,132.34067265776707,133.00661181259343,133.30927235509546,133.9121895074979,134.3264853148839,135.18608983372744,135.43100670149892,136.09237872036053,136.76633215998467,136.90001763705735,136.72506029812996,136.9713655376713,137.61044346324263,137.58553042199196,137.46496842763605,138.10933818139782,138.57677305941496],"annual_pct":[null,null,null,null,null,null,null,null,null,null,null,null,3.0643857939733152,3.196073579869906,3.217935432467552,2.8176974099964642,2.7344851522987397,2.3286784003449057,2.5785752841990464,2.0782889435079523,2.5890732210416068,2.427629697142179,2.106129601858693,2.151512986852886,1.7563287362493993,1.8622819214793167,1.8068549877345332,1.970819251849286,1.9707017776882017,2.3701518433107838,2.594418760452014,2.9643427730038048,2.0361049134383125,2.6091668428056023,2.6542357385468893,3.376489726559917,3.237899034088528,2.973794085230681,2.652619820846537,3.0291026520307636,2.5104316204968486,2.4550109470210355,2.0054662803026786,2.2915483923077926,2.7139510235874917,2.0939033454242146,1.887010272399486,1.9792731091774085,2.128723403425136,1.8625058412955964,2.155171323265363,1.8917630615360563,2.6025968245985194,2.8800903447685084,2.685507398551819,3.1945910990173596,3.7489233690371875,4.874279130501664,6.263293869106177,6.840386893463111,7.900759934652061,9.003535746988675,9.994105925397532,10.710821836727412,10.584005663092464,10.23261328454058,10.405090237564332,9.20518832356437,9.013906234979743,8.043552224272311,6.18415929657859,4.890448154769747,3.871315120689899,3.4641400460206544,2.6815108332533093,2.4354722862445577,2.606304868217602,2.601883387210156,2.786775269203797,3.4312323689714415,3.284973793163528,3.187852186041989,3.6179690372952384,3.925824135183009,3.9569186578611935,3.531608932686053,3.023605361964466,2.944130557774656,2.939004596341107,3.269653512948737,3.5604522632248594,3.69582122634772,3.3558753951432494,3.46824667641029,3.822992049878478,3.891644270617963,3.755263640568771,3.7535196280085925,3.981973719525504,3.442624804133972,3.1173346003052806,3.1342543866515595,3.164147215322176],"monthly_pct":[null,0.25327257170471784,0.6529352956821283,0.28963928215477924,0.07083912641997474,0.24223579036871712,-0.14227290882170643,0.32992356165773096,0.28574472500676357,0.49145717032327024,0.6293998611418758,-0.4141973718095493,0.3382321781823309,0.38136853222639044,0.6742583902400965,-0.09924397473704903,-0.01015004823747643,-0.1537264423165916,0.1015896643976363,-0.15939587158078708,0.787559383113304,0.3333146463879058,0.31354405407754615,-0.36993420329798277,-0.04993719817646047,0.48589004814404113,0.6194779028571172,0.0616504360387591,-0.010265240248545632,0.23740159573240915,0.32088673987069355,0.20059872988984176,-0.12105447167391019,0.8968132522965867,0.35760464629869054,0.33104234998269083,-0.1839342844859652,0.2288253354716396,0.30564672779699764,0.428630777260172,-0.5136354292115628,0.18320980065279258,-0.11929397142399893,0.4816189531595743,0.2913855594301578,0.287734990115886,0.15423017881043047,0.42189619444575593,-0.037654163663143156,-0.03243978805796482,0.5938391318756607,0.1696744198068542,0.18041740466224462,0.4541599755010642,-0.3082040120753352,0.9797764410210439,0.8301226272213207,1.3755475351570157,1.4807298983350459,0.9672658482219346,0.9544554658588315,0.989256514051487,1.5079861500694887,0.8223748430286418,0.065663517032837,0.13495625342967388,-0.15221989175806602,-0.11768950702673826,0.6535101718567143,0.4731840428667357,-0.26571908067002026,-0.2628844646979427,-0.026434808830313107,0.5933790957852206,0.740153785591407,0.5807910329439443,0.23254394706289505,0.1306412670570191,0.027709007864845085,0.5085570501768134,0.5111794782100576,0.3787064364106249,0.15000228538464336,0.03344038852430867,0.00347720116262398,0.18183032183132963,0.2458471833304662,0.503200672516211,0.22755300535621062,0.4522694796476471,0.3093787122066287,0.639936730890016,0.18122358522578078,0.4883460848218689,0.4952176205318347,0.09774735855041702,-0.12779935455612812,0.1801463747788871,0.46657775737482643,-0.018104033839063054,-0.08762694302673495,0.4687519745083073,0.33845276805482793],"categories":{"Food and Non-Alcoholic Beverages":[104.32344671160399,104.96487548601847,106.08768062751246,106.3809938207119,105.56630673493372,104.43688446512859,103.87855461970206,104.33655828638817,104.80635073936713,105.54774785793379,106.71149099973304,104.1417213900405,101.37881348276242,101.79020982426508,104.02309146986882,103.47595130523892,102.79748766775307,101.42298987229596,101.39324873659416,100.5764504066184,101.81507672265714,104.01344105342879,106.22248081016167,104.7625230351604,103.9253652149866,104.0808098094715,105.74196816707108,106.11030217905595,106.43211006932609,106.2328175012169,107.35074872383414,107.70850262492614,106.77313414796035,110.0366995160737,111.33402246226395,108.26264019882746,105.70596781210712,106.14760095570757,105.76739481626448,105.99595332528777,104.13897425721068,103.84033743304953,104.29416137378942,105.48472337522627,107.18699709295379,107.88571212160862,107.43329574397661,106.57980217072055,106.42933368582345,107.57013224969026,108.83448011318875,109.23219946189951,108.958744578791,109.34741255113059,109.82764893611228,110.27783480759287,111.85327587200268,115.28082480641726,119.27862469390165,120.47727269882107,122.31474186286131,124.46432511870658,128.87991529641386,133.47034236930034,133.70027125183987,134.49256106663157,134.9874513697648,133.34025804622596,135.2258558221503,136.5352602863915,135.37798063631948,133.68269982932128,132.080253537437,134.02286231683388,135.45446057299273,136.99801303598178,136.52368395550823,134.68140386590605,134.97345812158264,133.97124383153022,134.54540095645046,135.4348558846227,134.19320046966413,133.1567522953109,132.32253059130775,133.26345826060987,133.43955857872936,134.07044769979942,135.04398037046275,135.0045396984682,135.7791650276871,137.03687713838775,137.29758869534012,138.86828248941347,140.61858491042182,139.59921997051472,138.17977040819045,138.21604972007182,140.31401428453412,139.72855139874082,138.96147479964023,139.70095632467985,139.8699663492023],"Alcoholic Beverages, Tobacco and Narcotics":[99.71642479425054,100.0105572356257,101.23663455689574,101.96519982206812,102.02013772272944,102.24868564497065,102.46148669894606,102.79739181374386,102.41168106120972,103.21322216312139,103.85263401850229,103.4317186415158,103.78450004905015,103.50314325144275,103.59942000972282,103.52452976993867,103.80641566107369,103.73463385364916,104.04864369303209,104.30537046149044,104.84742008704693,104.79488634916493,104.70240498263134,105.39718468221217,104.93357573197116,104.74969585027755,105.02713700280061,104.97229770921123,105.40969563494818,104.74495579760813,104.9946120090639,104.9434215067703,105.01449257947425,105.23012635704555,105.58438118399222,105.49715361757673,105.7900425931943,105.65655571667945,105.98644797410216,107.18920454838111,107.57984211866535,107.38550598260342,107.2706061424233,107.7434471417248,107.39712091538343,107.3559339775018,107.52228097417289,107.19352301979036,107.19731435356294,106.70679573300121,106.9789009956514,106.65155429492002,107.20800957290018,108.7167154802438,108.53206302551106,108.83624687491708,108.61286300673167,108.91429509966765,109.95618674014855,114.22894474907034,114.28811339744836,114.13166798239156,115.26082650519626,115.89179205969634,116.55325773010716,117.37457633336435,117.66785041040157,118.67900093932714,118.52509435481282,118.36036634366049,117.99110693345168,118.60192737092454,118.6174780348151,118.3967692907615,119.89709306499483,120.9044631948824,121.32153883224692,121.58294163181418,121.66124010159128,121.20531995453926,122.68038192720086,122.72025026524103,122.89563206977873,123.11021716414494,123.02007979172977,123.20908056915697,123.40653674166232,123.60291275528309,123.71632330253271,123.9356245304401,124.82097060471507,125.27125078968555,125.53473232530543,125.72366478905342,124.93419100103044,125.3455325107099,125.35227025898192,124.67803617956629,125.10067899259826,125.04021938475799,125.71603045104106,125.97626248588087,126.10848032427252],"Clothing and Footwear":[101.52813207961785,101.71058091215589,100.91828311712854,101.53985217957809,101.76907214562198,103.05122958794057,102.69083139684929,104.11262724644945,103.98438294769458,104.31736920733046,105.3018135370881,105.64466641872616,106.1061171435274,107.05087749932356,107.86669262101407,107.82298552619058,107.52429333937735,108.30222818370423,109.38243968716864,108.75177604155775,109.70364257473041,109.63081945271071,110.04511613703225,110.99907077777512,111.54385251962081,111.50074742964706,111.98454199677515,112.14525337262015,112.54279356733593,112.76807612577404,112.34727284634292,112.83515208895734,113.08180559796406,113.17045251575968,113.18281917820735,113.40737193205368,113.27539991632639,113.33428708816669,114.29293166642518,113.48480776819193,113.32273964176639,115.11528428471496,114.83458517677528,114.59651762962581,114.22302339657742,114.62435249902421,114.63772489366966,114.69569914925552,114.67415188846522,114.91789311628226,115.39421093423238,115.94856206717455,115.49047736737951,116.02559940263072,116.74596555263663,117.4750263623231,117.88068138413897,117.90370509555854,118.14081466549506,118.61549752407659,118.5497900971704,118.79325304144628,119.28445901429579,119.78776709905641,120.8755561212193,121.39299074817914,121.09088570587492,121.8075301242762,122.20145426541396,122.060890574901,122.34387236009194,122.2849431547724,122.55581251722371,122.09752984573834,122.63089599673856,122.66699101095061,123.98785305918348,124.89284670891698,124.99838984105608,125.39886901777147,126.05070899450756,126.7455551571027,127.48609162677482,128.05610117086866,128.18973657012245,128.83217104699625,129.30558955107122,129.15120277310433,129.02868173319996,129.45331102873268,130.62399577608141,130.81609037555043,130.96959864794104,131.56540636238034,131.68404987751813,132.1503400697091,132.08542953055897,132.3396749287337,132.14489678988485,132.44971518796027,132.55922850945797,132.79880783526187,132.94979544362502],"Housing, Water, Electricity, Gas and Other Fuels":[102.20301791482855,101.59763103340448,102.8024782264284,103.35611883517461,102.86303654541224,103.39404417982928,104.18801943168009,104.58443845785028,104.32745720832986,105.43734332685528,106.88118160013569,108.59682406779557,109.92029597816494,108.90016419063144,109.60816773371339,109.17135148211852,109.1929377780457,108.62295243917708,109.26373891612927,109.17898588520096,108.92312888472492,109.03339886163721,108.8713235700645,107.52399834091227,108.61578131431162,109.2759063927768,110.83224716728053,112.49840672881959,111.86516478017414,112.10059320469118,112.2990346443215,112.17237188282247,112.17876814497703,112.40986936199306,112.6662169049767,112.99626557658232,112.32887956713876,111.9258360470977,112.07918599524139,113.10377834867354,112.26148181146561,111.28912121563545,111.04283726682672,111.61324258798851,111.24639281665243,110.77991662060573,110.69979286296604,111.344997607773,111.31787896303472,111.12619717286249,111.55950454959802,112.12025292134918,112.39914534837399,111.82115641221625,112.21110897642653,112.86528683474185,113.39433204924484,115.81000201569503,115.62045628742068,116.7674840108911,117.08254540600164,118.04083849075677,118.39145459822265,117.74014791105716,117.85840195436417,117.39954032960269,118.40807934563969,118.493047076307,118.29858601674273,118.33463176594314,118.18608890333805,117.70608196507625,120.89451039131892,122.02349056913054,121.93825469438647,122.36517178501907,122.14901973217786,122.85594189932304,123.51205943607452,123.72903570004313,123.66043868553287,123.9953372877664,124.9951121618157,125.00380154926737,125.52001210427626,125.7235978566396,126.98146515240164,127.473583077213,127.17460880785964,127.08250527403862,126.92614523374593,126.6546876711823,126.40701153432578,128.2072607065106,128.01164871052026,128.62442837162578,128.97837040498447,129.55804855378503,129.84984341022263,130.0663911723993,129.90900578461662,130.27025849582702,130.7978514509353],"Furnishings, Household Equipment and Routine Household":[101.77644930398634,101.87886613263167,102.46955280306493,103.16426080883288,103.66850658255086,103.68023965010966,103.72597925905721,104.3178320981394,104.40732475095905,104.40275480554926,105.63837817041183,105.8004801121961,105.51157472583903,105.34925925658641,106.13953898229589,105.83069588992733,106.08817833745468,106.39596362420636,106.50878599030297,105.70483886754167,106.22100180709968,106.16332499360875,105.632636474588,106.64183722459441,106.66288370090832,107.28134900888917,107.55981365128675,107.67193043976583,107.06489480691867,107.44269840852175,107.17992595595778,107.68364870948507,108.10936953769946,108.44339843351722,108.96080211373123,108.92172113888839,108.81614479143552,108.98846033872492,108.54026224129032,108.7487707118713,108.36790025775171,108.73183306018296,108.47149235683624,108.64255490768885,108.5669186522366,108.96989181723823,109.43731472682221,109.83504353404818,110.11480117814932,110.86014938014216,111.78259872023128,112.98620177099501,113.42580977999881,114.13215494834628,114.78665378163025,119.02166747926503,123.53865842011591,126.97809744051554,128.3516572770213,128.18588396839536,128.99918593575927,128.81036540876536,129.85495585857473,130.07762196759833,130.5839399000715,130.46420836534554,130.12761947874728,129.78387169349563,130.25360736886094,130.57045179643555,131.10237542350816,130.61057496450528,131.21128290388097,131.89444816668146,133.06836342352454,132.66570703071375,132.8114462832503,132.96093573452723,133.61858701041518,133.86076308845685,133.95282725553545,134.40353049692334,135.3734804538311,136.42642536670272,136.58320847867557,136.52842343441299,136.71231365235502,137.38540181622383,137.01065057684113,137.3125190338886,138.64297301245355,138.8377476472605,139.16768111685576,138.88732900965456,139.08317256916735,138.95026988784676,139.17477681814862,139.44678305660145,139.27833782545525,139.4646255518423,139.87005849781707,140.09447254438066,140.36231972371593],"Health":[100.201513496284,100.2972874436749,101.65963433615035,101.7296206404693,101.84990892164502,102.54342763393866,102.64933850697267,102.98512115995287,103.02446473219258,103.47894847036606,103.55413785193153,104.23429103647545,104.38650039812991,104.82942102282182,104.92348779812916,105.00285984999653,104.99753634275675,105.07424369221732,105.20219635477804,105.00983378085826,105.33494222221053,104.95093925770264,105.10223445540191,105.22105287505352,105.95293180862207,107.5155260468329,107.71258592283824,107.84933662685299,108.16369269395022,108.69818674144076,108.89981030507309,109.66339775632474,109.61500193990464,109.7860971905004,109.98096230411849,110.37031290280213,110.71413233080233,110.7203924740151,111.01326701202086,111.0295492367764,111.8382586346703,111.86068067857369,111.85806619830207,116.14287011155491,115.51843351607363,115.86252045272063,115.90045330711669,115.93109705098664,116.2777958411545,116.34576435339808,117.12110184171483,117.09971462330017,118.07572092640662,117.93427197945188,118.36723652592421,118.70136248275621,117.95648655624738,118.08773232210456,118.37377279693467,118.33728307732548,119.5889199915925,120.13405645174231,120.63429977550862,120.65284410807674,120.49645792562877,120.56108499249848,120.47971645625564,120.58477288154585,120.04948806160293,120.20722931816147,121.64589234418428,121.80078565913412,122.61086715888291,122.77115116183779,122.82731566387957,123.13444967709461,125.77199287397117,125.98379112718894,126.75165675805816,127.37731788847685,128.13296540589312,128.82326291890317,130.8023222444464,131.4626308673252,131.47237192218248,131.6755329732291,132.570096358129,132.7504706691901,133.20251155183732,133.28567403232427,133.95131659641828,135.33151012015696,135.81971535818084,136.20481776688433,136.54368150868703,137.46579275644626,137.8071794766716,138.10694425137183,138.08173734071153,138.08594019216866,138.2780841478594,138.9696567239106,138.976226714821],"Transport":[101.7709307363839,102.48538189065005,104.47102343549768,104.1664237118914,103.93103106570186,106.35788290465513,105.56925637156206,106.79583819205295,108.26486171846926,108.8852912506356,108.44359189150458,108.78362471383053,112.20132462522689,114.36168587071283,113.50445622511059,113.85140428925462,115.03053929737317,116.46802043518728,115.12139583869666,115.78508432581101,118.33354760170594,118.46494329514937,118.38107067948175,117.88059290661812,118.54638659820269,118.78949973592566,118.10318933651524,117.53964027058876,117.77952594915983,119.73547028014315,117.24448276421762,116.34737694639833,117.07038393232766,117.10943805752072,116.94280619544038,127.66859275411417,133.27262186499618,134.61205583880874,137.9094677359874,140.67584509089076,140.49568215846384,142.88878759909687,140.74537256773866,140.14366472990352,139.09620987660733,140.05205678864843,141.42138134344208,147.94883923163235,147.57752177589032,144.48186965250815,144.5879805092893,144.00876465722976,145.3701819538316,148.9140357277215,141.04355246511625,141.02575069089872,141.56205418106896,143.25665242763597,147.59769002631543,150.39911775351575,154.4161291742515,157.12237386611923,157.28418224460117,154.73799704338458,152.73625855857807,151.10095470035992,148.0063672287502,148.62837966432664,147.67676480048058,148.86003404176154,147.2271431307159,146.49092131977451,145.84809556152933,146.23779095702625,149.7607531636942,149.28798253255323,150.291453488063,154.73847056075434,151.73517856484995,151.37188651656226,152.2605063400322,153.1854371949965,154.53081391250043,154.45265592058237,155.05293385284554,154.11972083368028,154.10565291172196,156.5408261222422,155.86839203656686,160.4457567310585,158.297921798522,157.92344121977334,158.22600626556215,157.86940250806776,158.70463043072928,158.9010101331863,158.98623424162324,158.80761939251158,159.14103722233153,158.1450019786636,157.98008497436368,160.6732882184364,161.21460987974487],"Information and Communication":[98.47098120713375,97.25260479880708,96.74028335943923,97.08554346912311,103.83314327374109,104.60548913715313,104.53022887612579,100.4718305371993,100.32098622011291,100.3986549349007,100.52653207712984,100.37965290867588,106.84980501081797,107.1015799509901,107.19652794341543,107.33699940954521,107.29746762523132,107.32417082128264,107.14086322103775,107.34760196537239,107.38622683181504,107.30684168362558,101.38526709519611,101.41028602473476,94.4022310454421,94.6262279052862,93.23813132929398,93.31310629689865,93.32824093643427,93.4600576917837,93.5136023330571,94.07364658068663,94.03455963162631,94.03455963162631,94.17766023183654,94.3891950860867,94.49732269699471,94.71367963992662,94.75907881442569,94.97705498732189,95.03759944323491,95.10200502985968,94.91841032309055,94.85767304553909,94.95526351428185,94.95110807652608,95.15510918066069,95.21308761566141,93.17439162832405,93.13632144826522,94.09776650557073,94.10814069754808,94.09016478698604,94.08388417467998,94.13621902177285,93.50101872663164,92.7099280873504,92.64758978078032,92.55960056347777,92.81692893880246,91.93087029297565,92.05620837375398,92.84419223022651,93.32773828845197,93.15206674407398,93.19103061508598,93.40532809071544,93.70882066888177,93.85405304340188,94.79349205047494,94.85812786683047,95.15486549988374,95.11784923328227,95.10460666178992,95.04798779172208,95.07058124181168,95.14880317410054,95.16650043979274,95.1234997910852,95.28755359703132,95.55234936319394,96.17918968033825,96.26709287450957,96.34523653968907,96.3405668672261,96.33134837888814,96.47494785798268,96.84384806317931,96.87069964034266,96.86611471294779,96.91535212806801,97.0264507838631,97.4290436523006,97.41021395527902,97.38045937937497,97.93593857999358,98.06846120625632,98.83438773489515,98.97725407712257,98.98009422652196,98.98551779439215,98.98468586293816,98.99847714283457],"Recreation, Sport and Culture":[102.20197237072065,102.4119500563507,102.00483512648584,101.81856114833134,101.56674570110852,101.95690416801351,101.96182664698823,102.26652343978762,102.55813005972172,102.58995787245074,102.95549776441929,102.85894594333648,104.17614960356585,104.36003299049621,104.52952337380498,104.5173039525781,105.05403809325009,105.21584212521624,105.66522086070015,106.27417681468053,106.64923215641757,105.64977476313116,105.79898908506473,105.65333816678236,105.69797121106296,106.46228622063508,106.27955733267176,106.41782012356387,105.90733411257578,106.57678315258987,107.59579189676629,108.80601724901986,108.85853607100319,108.86142952961954,108.7032312781149,108.75227731753414,108.48273804814258,108.72387615264567,108.92249343674224,109.0119298168744,109.34553389421342,109.40895005836433,109.33477871930333,108.9714287546384,109.61575567491606,109.3847197865621,109.43899131372478,109.62047695499433,109.27448940684049,108.37980626443503,108.43260870358222,108.5739854801875,108.43102984793828,108.97149329862289,109.47635591345562,109.57601002938051,111.37592607024257,112.56062952193268,113.04880387361919,114.01011652360863,114.73770020115049,115.3547228387793,115.64173703736688,114.79918935280092,114.92325941933682,116.41466851984845,115.1131595285285,115.0901351087367,115.0338122796761,114.48861885891533,114.53473764023167,114.47896109194608,114.4173516493508,114.27228394920722,115.0415295791957,115.12631451080631,116.54918596922974,116.74283093210339,117.1260211470712,118.11813600795755,120.73557300434811,120.66151822570815,121.30359320624449,121.06869559149199,122.63341793254187,123.00835205695196,123.06338125602498,123.02715881374887,122.87723185266594,122.76232048316002,122.22208532816701,122.50079060252313,122.69025258018232,122.6678854474564,123.62354277895005,124.48043038577244,124.36495424921307,124.83163558950869,124.84683015926126,124.81986278587327,124.99316063899086,125.30218974967691,124.76630562732572],"Education Services":[102.86150674366593,104.22628472538474,104.22628548500022,104.25132810344567,104.25138484516467,104.25140156541929,104.25145830631023,104.54896496441664,104.87808029910244,104.87808029910244,104.87813802022326,104.72239377152194,104.72239377152194,105.23973152849081,105.23973250949743,106.03422910097639,106.03422719037422,106.03423082306954,106.03424816363344,106.07367195111856,106.48452702215381,106.48452702215381,106.48454340733335,107.35599303610218,107.35598965489203,107.99729659314492,107.99729659314492,108.61066563828342,108.6106699747912,108.6106699747912,108.6106699747912,108.85383967555177,108.85383854848708,108.85383854848708,108.85383950377096,108.85383950377096,108.85384045904793,108.85384045904793,108.85384045904793,108.85384236958123,108.85384236958123,108.85384236958123,108.85561972324811,108.85561972324811,108.85561972324811,108.85561972324811,109.50123622850931,109.5075339653736,109.5075339653736,109.5075339653736,109.5075339653736,109.5075339653736,109.5075339653736,109.5075339653736,109.5075339653736,118.6714610952389,118.67042490320951,118.67008828128739,118.67008828128739,119.23706010661954,119.2362889914726,119.23766180542411,123.52557877428303,123.52557877428303,123.52557877428303,123.52557877428303,123.52557877428303,123.52557877428303,127.39043438650157,127.39043438650157,127.38906157255006,128.18923425179105,128.18923425179105,128.18923425179105,128.18786143783956,131.0635557214613,131.06355588562445,131.06355588562445,131.06355588562445,141.4745401817721,141.4745401817721,141.4745401817721,141.4745401817721,143.68132583682313,143.68132583682313,143.68269865077468,143.68269865077468,144.5100630738145,144.5100645402846,144.5100630738145,144.5100630738145,150.8757102151168,150.88709580439107,150.88709580439107,150.88709580439107,152.79455886596614,152.79455886596614,152.79455886596614,152.79455886596614,155.4694394566779,155.4694394566779,155.46943992323472,155.4694394566779],"Restaurants and Accommodation Services":[102.38112388192876,102.26387977991072,102.38834802913631,103.07223662439554,103.39638689500708,103.85319293355572,103.9941798349402,104.21974974823551,104.39046786861944,104.48447154642116,104.78382779953553,104.84940139128119,105.12058212867227,105.26777241696014,105.02639024642507,105.3277676271518,105.59315006758762,105.90363420576276,106.57854804575115,106.4274422621469,106.72374158617907,106.82992190580936,107.00551682528645,106.79235576745837,106.90836468167812,107.33152778646208,107.60749241134047,107.54988231142693,107.83192454125268,107.77500207258025,107.97124024461071,108.42727822147594,108.37198837458243,108.71645190171465,108.80397423715597,108.67677292291943,108.1751220583132,107.97288528529954,107.94874772401697,108.15745849835169,107.53087823964042,107.49315972533337,107.91795583751083,108.30885833871103,108.83835575264824,108.7710803371354,109.57596057712273,108.93076566770964,109.54681575505053,109.62245793983234,109.65441102690794,109.67416303009401,110.24041072865703,109.35078478802112,110.4441406459832,111.77937744868176,113.60188591739482,114.24236189968877,114.29502604106523,115.55788777406303,115.98964528640866,117.10696915412294,117.82959582675252,118.44618676503288,118.47742578639017,118.16211019149128,118.06873273503655,118.89055658087264,120.77393985743656,120.17142061981649,120.46269219316666,122.17976945730146,122.18303418254935,122.954684661662,122.80983999302634,123.4122733437503,123.56432169845692,123.30726436339931,123.80197426834103,126.00724754590422,126.46444944516176,126.42086247855248,126.7321403052272,127.19855533992057,127.16134682426153,127.08638888494323,127.313171188216,128.1612111932764,128.30744056087013,129.23501743753647,129.77356697540702,130.7481418639926,131.37597218872375,131.6899602129255,132.6153181680176,133.12464055372243,133.45699204619478,134.20712279858793,134.40079727415718,134.8175716571981,134.95418709086172,135.30656342301734,135.45839565322223],"Insurance and Financial Services":[102.21671268667764,102.28742652065486,102.27335067807148,102.82405347306454,102.9902219938227,103.16260408618832,103.16260408618832,103.13188386774063,103.1489359194722,105.99095766670693,105.87256190176032,105.43158140825274,113.61883939704921,113.92491884807106,114.07149374841298,113.96522550202073,113.96464158146063,114.01063505710077,113.84195101367155,113.84195101367155,114.04205723046495,104.84904182438548,104.40442376268501,104.39985225152634,112.59320154204188,118.83883125681389,120.42171571505106,110.3231458593908,105.71855564126331,105.90193081482765,116.63053328972644,116.63053328972644,116.63053328972644,116.63053328972644,114.37588751365995,114.37588751365995,114.39368872555887,114.39274512805758,114.39274512805758,113.9762153460909,113.99879491341376,113.99879491341376,113.99879491341376,113.99879491341376,113.99879491341376,113.99879491341376,113.6222589317678,113.6222589317678,115.2223245267066,115.31204329507733,116.85365755632334,116.86050097176181,116.86136988713075,116.86136988713075,116.86136988713075,116.86571446397555,116.86571446397555,116.77829216415314,116.84453780910245,116.47962680325529,116.64979288295636,116.69659661560522,116.69659661560522,116.72509055942797,116.72509055942797,116.72509055942797,116.54060111458298,116.53981721777623,116.53981721777623,121.4859830563475,121.4859830563475,121.4859830563475,121.4859830563475,121.4772939026579,121.4639943458024,123.1928618940936,123.17403539443282,123.18417274040401,123.27189804300174,123.28789514151265,127.05708942256015,127.07205323317854,127.07205323317854,127.07205323317854,127.03417528698164,126.28548449206686,126.28548449206686,126.40674483579384,133.45412072540924,133.45412072540924,142.73264743570547,142.73264743570547,143.73395619272213,143.73147852611507,143.73147852611507,143.73147852611507,146.9922974686518,146.9922974686518,146.9973997814831,146.9824651687259,146.98886221538106,146.98886221538106,160.35351624793694],"Personal Care, Social Protection and Miscellaneous Goods":[100.77895207640222,101.02536869095603,100.64797213600453,100.74848078921872,100.80122793958054,101.13609165056391,101.2005831102169,101.5759867808694,101.92444878287334,101.51671998995336,102.19454289486715,102.58206936098269,102.68886154179518,103.29588508652455,103.79626560934368,103.66807899747806,103.60790993984692,103.7910731571703,104.18966568841753,105.0100872415883,106.1004790024256,106.44339312168816,106.58573772599273,106.8734282305332,107.71074841011311,108.20094200301408,109.51592928049509,109.90550328240737,110.22938934274156,110.4241115161227,110.31833811980668,110.26902902469928,110.45632942212897,110.44226944764148,111.00081035965016,111.21693622704699,111.40083957166624,111.85226602319374,111.84657844661517,111.76232858559874,112.60889500722834,112.54900394406468,112.64880854013924,112.47728423997381,112.53604023070179,113.23426675694263,113.57428579648567,113.37110494212932,113.89694905342888,113.87231285751905,115.07027596203754,114.97702493875796,115.15000719611916,115.717225765572,117.20875186852354,117.64812576381455,117.72431577630779,116.77346254999341,118.02685535163167,118.731146210669,120.00515759727524,121.48917142039953,123.28832400686731,123.57981948041574,125.38985813142817,126.51831583205663,126.32962625074356,127.46845766222253,127.88124175816489,128.57380836132464,129.1399751938767,129.90736749814613,130.8790715978552,131.04113924570618,131.39981140758752,132.00647622389104,132.34944215200443,133.27933639304416,134.41692695688633,135.1816271697015,135.44456189132384,135.42237633177686,135.90319943375877,136.66076777102782,137.14541613886496,137.28448000835613,137.77278418162948,137.9963475656206,137.52268047061798,137.7599670059709,137.7557757620944,137.90491886115527,137.95769240627652,138.0900171264487,138.14732492916124,138.45965257581426,139.14420111007047,140.12596732346123,139.91601196047532,139.86123261937715,140.54667895467344,140.70322179507005,140.5073672162536]},"weights":{"Food and Non-Alcoholic Beverages":270.5390004753476,"Alcoholic Beverages, Tobacco and Narcotics":38.795791342564634,"Clothing and Footwear":69.77288896194038,"Housing, Water, Electricity, Gas and Other Fuels":104.16172507951781,"Furnishings, Household Equipment and Routine Household":48.36722367277888,"Health":47.46954703122525,"Transport":104.54790560057987,"Information and Communication":44.321641547949426,"Recreation, Sport and Culture":49.849448536995375,"Education Services":57.955754225276586,"Restaurants and Accommodation Services":87.37912278394087,"Insurance and Financial Services":22.795280118963028,"Personal Care, Social Protection and Miscellaneous Goods":54.04467062292019},"cost_burdens":[0.0,2026.1805736376814,7262.892587214331,9601.043034405877,10174.557340778456,12137.090083119161,10981.63902143785,13657.258529287652,15982.24122516978,19992.444458235426,25153.475765029398,21735.71175501543,24515.086351786587,27659.527434591524,33240.09124094083,32413.150655290578,32328.660318963997,31049.15108107438,31893.411124637085,30567.407371351685,37108.61892118569,39898.8245542256,42532.277378882456,39415.462311032636,38996.281748094574,43072.881185407045,48295.53138933154,48818.509283330335,48731.376024078265,50746.27785424095,53476.2098498188,55188.27228668943,54153.02864185563,61813.18619760834,64895.07019386576,67758.23915912013,66162.1342508548,68144.1326602826,70797.58679432029,74530.09325895969,70038.19686086476,71632.19210693672,70592.38744876222,74785.32539147996,77334.32350568475,79858.72133470711,81215.72901390088,84933.54463946795,84600.33031425934,84313.36784194538,89564.76666859831,91074.13052524951,92681.78334515973,96735.98671370272,93972.21042492773,102731.13953194617,110224.91498417377,122745.49136662358,136408.8597428278,145466.42284284453,154490.47879352805,163932.83803099426,178468.8117244734,186515.49307897675,187163.27384780627,188495.51241742494,186990.8256183898,185829.24098132044,192271.7353482712,196967.00686181607,194317.8752965995,191703.96807273012,191441.8130246073,197324.82148996944,204706.55891087014,210541.80451242405,212891.758311358,214215.0129383321,214496.04185603358,219655.33300065712,224867.60181143097,228748.84138417803,230291.98815712225,230636.52180089685,230672.35910601536,232546.4339736044,235084.92029810793,240293.47457816178,242660.69364408907,247376.32973772375,250616.68913862327,257339.97123328186,259255.5558488481,264428.3888840942,269699.6258237913,270745.22895245766,269376.82346091594,271303.26704110636,276301.72979915014,276106.87576977676,275163.9162108392,280203.76829727844,283859.747851713],"cat_cost_burdens":{"Food and Non-Alcoholic Beverages":[0.0,1330.7190663355825,3660.1097472098254,4268.622296330444,2578.4585846509603,235.33989661632938,-922.9807155069716,27.201496488710408,1001.8409254265963,2539.956022155019,4954.2773761092585,-377.01044899528733,-6108.986277645157,-5255.496416735773,-623.1221030202156,-1758.2284126734228,-3165.780637068044,-6017.337187085088,-6079.03865404686,-7773.582388917495,-5203.907125561325,-643.1430214246725,3939.768503336835,910.9152233876515,-825.8666568049242,-503.37865207097485,2942.888785304802,3707.0408035481,4374.6689368051275,3961.213178753176,6280.492344466642,7022.694684350174,5082.163301915884,11852.811630789702,14544.259923339298,8172.317938524503,2868.2018353950107,3784.421481218206,2995.639345030712,3469.810722839841,-382.7096975794378,-1002.2667422160965,-60.755860897430246,2409.204356295628,5940.770420462006,7390.336526090734,6451.745799182701,4681.073487259238,4368.909004276696,6735.6291458412725,9358.666769892292,10183.78210847858,9616.46794788883,10422.805146806046,11419.111735057555,12353.075015892546,15621.511896061986,22732.363326117116,31026.267101366386,33513.00267918238,37325.04752020793,41784.60957499756,50945.26820613393,60468.646439499404,60945.660817558564,62589.35876916548,63616.06662573953,60198.77128601182,64110.66456543788,66827.17738122368,64426.26529735466,60909.206844957385,57584.744459658665,61614.91373844429,64584.931877313036,67787.21212154404,66803.16092789474,62981.13525871276,63587.03599459428,61507.8251491747,62698.98130505693,64544.25965672646,61968.3001731307,59818.06712794253,58087.376564393475,60039.44114198592,60404.78186297755,61713.635184872895,63733.34265392879,63651.51836367904,65258.569272486566,67867.8402506997,68408.71688968,71667.30500190864,75298.51223238453,73183.72035650296,70238.90610489588,70314.1717835804,74666.64482156484,73452.03354150777,71860.6433568457,73394.78433059827,73745.41540766391],"Alcoholic Beverages, Tobacco and Narcotics":[0.0,91.54841518808944,473.163700926535,699.9288788028063,717.0282430068792,788.1635451105487,854.3976509124157,958.9477670762061,838.8956981836532,1088.3745290295597,1287.3908012194552,1156.3813297335764,1266.1841743861346,1178.612164977959,1208.5782054418362,1185.2686965238795,1273.0053857399407,1250.6633731474906,1348.3986077056757,1428.3045462646423,1597.0169261061385,1580.6658550562427,1551.8811263095781,1768.1305821809028,1623.8327806084335,1566.6003594741976,1652.9536284393464,1635.8849555834372,1772.024603153631,1565.1250230313253,1642.830258107672,1626.8972677318109,1649.0180648847615,1716.1338529473744,1826.3952978531802,1799.24580890624,1890.4071966759464,1848.859545773491,1951.5381663590701,2325.8948939525712,2447.480429724307,2386.993510338378,2351.2310550829284,2498.402322283584,2390.608646035598,2377.7892546352996,2429.5645836175,2327.239013668518,2328.4190623455916,2175.7456539900772,2260.4381328050554,2158.5518140810873,2331.7479381942917,2801.3310761727635,2743.858192486971,2838.535097927037,2769.007102254931,2862.8275263676146,3187.115211322725,4517.0066791600975,4535.422859172424,4486.729387126525,4838.1787980639765,5034.566167925971,5240.446667011072,5496.081224495284,5587.362474679664,5902.082020768979,5854.178757077894,5802.907335647548,5687.975729872087,5878.092953098789,5882.933080993713,5814.237714913749,6281.21192271588,6594.754823552847,6724.569180091582,6805.93052844958,6830.30084539331,6688.396175783283,7147.507674229469,7159.916652806254,7214.504056301037,7281.293442811304,7253.238279785941,7312.064574369025,7373.522601839429,7434.6444309851095,7469.943345371352,7538.200623520809,7813.76366448945,7953.912901791933,8035.92125457529,8094.726286597063,7849.003394595992,7977.033009881439,7979.130126994241,7769.275473941638,7900.822608092546,7882.004618295869,8092.350106863973,8173.347055923286,8214.49972003527],"Clothing and Footwear":[0.0,100.30703312007411,-335.28381205676544,6.443496724686598,132.46444410978629,837.3711691500272,639.2308314601563,1420.9082003525912,1350.4018290937765,1533.4715879362336,2074.701085632701,2263.1953328985132,2516.8925064678233,3036.3044806695534,3484.8247221690785,3460.795360363609,3296.579855892591,3724.2742133168244,4318.1547525748865,3971.4274082125594,4494.746228841009,4454.709407499246,4682.482151548536,5206.948975550258,5506.460019070559,5482.761628527341,5748.743038181537,5837.0992149539825,6055.659547312403,6179.515779968297,5948.165828862769,6216.392918434969,6351.998509070697,6400.734964084535,6407.533929046205,6530.988928477747,6458.433126566979,6490.808217237403,7017.853483157141,6573.561735725387,6484.459642284002,7469.9679207870895,7315.644682182572,7184.75949643189,6979.419194258496,7200.062598829414,7207.4144969694935,7239.287682970561,7227.441392853637,7361.445864525306,7623.316694150064,7928.088813974892,7676.242219425915,7970.442532831784,8366.486674425068,8767.310980979762,8990.332696945665,9002.9907126303,9133.34922002032,9394.321178869897,9358.196436632692,9492.047913100216,9762.103978145862,10038.813563103944,10636.860083631836,10921.33618326988,10755.244353234004,11149.242354821143,11365.814647020736,11288.535299361309,11444.113512193164,11411.715312284196,11560.634336498566,11308.678900733006,11601.913861073743,11621.758240101404,12347.94404998607,12845.49301609607,12903.518700907545,13123.694831847251,13482.064535976899,13864.078254975391,14271.211669624896,14584.592497678472,14658.062797446875,15011.261529676767,15271.538369529973,15186.659341062636,15119.299512903517,15352.752937725389,15996.374012697162,16101.98411215948,16186.380154319311,16513.944344860232,16579.172380780547,16835.530205059385,16799.843577144038,16939.62304967107,16832.537589310534,17000.121172751577,17060.32959510072,17192.0459291216,17275.056156274706],"Housing, Water, Electricity, Gas and Other Fuels":[0.0,-493.59123200991735,488.75911061633866,940.1599561697395,538.1342394684364,971.0816992185183,1618.4350442803593,1941.648119296529,1732.1231106675773,2637.048660664624,3814.2560531590425,5213.074073973719,6292.142931946131,5460.396950538856,6037.654819548432,5681.50459825609,5699.104593776569,5234.377368472403,5756.8310197145875,5687.729170572968,5479.120798045543,5569.0274270590535,5436.882272777619,4338.365043248407,5228.530521661131,5766.751551482271,7035.6858212628185,8394.158850560414,7877.856493864111,8069.808796884222,8231.604431501451,8128.332242399813,8133.547318930204,8321.971511667263,8530.979839145988,8800.079047338018,8255.937948917559,7927.3237127737,8052.354816280361,8887.737639325474,8200.986409202733,7408.189803956326,7207.386645766298,7672.45629602856,7373.351977529977,6993.019057582367,6927.691602594232,7453.747608530096,7431.636912580884,7275.35263575212,7628.641959463227,8085.83799088223,8313.227881343004,7841.975067910541,8159.915830256107,8693.287901814581,9124.635338021351,11094.208104554884,10939.66542711683,11874.87371218157,12131.753315858434,12913.080230670676,13198.948725276154,12667.917611126317,12764.333904107038,12390.20938697954,13212.503412057811,13281.780312744046,13123.230008940809,13152.619257869848,13031.507524515057,12640.142558903928,15239.769943267682,16160.263488767008,16090.767961663083,16438.847081309257,16262.611418897159,16838.987607617197,17373.94116086677,17550.84882889757,17494.91949520492,17767.97300651657,18583.121347117747,18590.20608183746,19011.08901082329,19177.078967679157,20202.65829103629,20603.89773023657,20360.13447325576,20285.039524676347,20157.55419703985,19936.22618869416,19734.28793518776,21202.0885005606,21042.599801582404,21542.218602644305,21830.798830703843,22303.428913078005,22541.338565735823,22717.896862589474,22589.575536443,22884.116393314252,23314.27975611965],"Furnishings, Household Equipment and Routine Household":[0.0,38.93724092614276,263.5068697921764,527.6237473766067,719.3299292311218,723.7906539419182,741.1801220304686,966.1931095734452,1000.2167854678074,998.4793652821493,1468.2436148492868,1529.872181612537,1420.0349724132518,1358.3252259201702,1658.7769435334435,1541.3597372501551,1639.2504474609098,1756.2654929596574,1799.1587528727694,1493.5109093993424,1689.7478071880253,1667.8200047706498,1466.0607138888295,1849.742705077211,1857.744238904425,2092.874861672505,2198.742666933241,2241.3676775161525,2010.5824345091312,2154.2173239404797,2054.315438385444,2245.822776324914,2407.6750292672864,2534.667475379716,2731.376082930249,2716.518121077572,2676.3796816116323,2741.891297904317,2571.493546545675,2650.76513366216,2505.9642759334065,2644.3257092703375,2545.348335891624,2610.383582970542,2581.6278878347935,2734.8318428876723,2912.5385604808853,3063.74869454834,3170.1080783857087,3453.4775489964677,3804.178041018049,4261.768679069507,4428.900616135416,4697.441756890741,4946.271749915691,6556.356253130997,8273.64399628274,9581.263725964436,10103.469216877495,10040.444855134712,10349.649260971344,10277.862715258021,10674.999304540852,10759.653399456862,10952.147382942756,10906.627367572768,10778.661653891833,10647.974241391286,10826.560235560673,10947.019421572964,11149.248280790593,10962.273608629093,11190.653163738296,11450.381674978853,11896.685488396672,11743.601965066557,11799.00969896605,11855.843198472689,12105.871699777972,12197.94317301126,12232.94449751641,12404.294664556679,12773.054131706387,13173.366954283754,13232.973386984162,13212.144988997063,13282.057110029094,13537.954469357137,13395.48003924424,13510.245600681052,14016.062933532885,14090.113135849166,14215.54856638486,14108.963177180456,14183.419767581134,14132.892292841312,14218.246238578327,14321.658661908952,14257.618477939659,14328.442093353817,14482.581217808478,14567.899850633135,14669.73106617761],"Health":[0.0,36.297622591961876,552.61708826634,579.1413835468355,624.7297585830052,887.5682565781788,927.7076995321391,1054.9668586545577,1069.8777835509457,1242.1237820903057,1270.6200054301066,1528.3930665792707,1586.0792966533652,1753.9429601154375,1789.5935770270644,1819.6750016891635,1817.6574315469743,1846.7289535694028,1895.2220728548423,1822.3180702615366,1945.5317815801193,1799.9974785717113,1857.3372472214107,1902.3685555362306,2179.745295634937,2771.957034506306,2846.641280087881,2898.4687924619097,3017.6074329150883,3220.176751001915,3296.5906006733817,3585.984636071757,3567.642977120644,3632.4868203847473,3706.3392671423135,3853.900284224426,3984.2053220485113,3986.577870344769,4097.575169056263,4103.7460126440465,4410.240934394634,4418.738724341877,4417.747855522545,6041.657066333237,5805.000183194913,5935.406604831252,5949.782878026762,5961.396631872111,6092.792926808535,6118.552493713352,6412.399706854217,6404.294108166306,6774.19332818,6720.585216240779,6884.6755991860155,7011.306882636858,6729.004377677991,6778.745558924617,6887.152797889419,6873.323462178162,7347.684659287378,7554.287373602481,7743.875918972804,7750.904084806145,7691.634870330478,7716.128053981848,7685.289976405828,7725.105589940891,7522.236574902921,7582.019352513343,8127.262072252553,8185.965500911697,8492.980439187071,8553.726899004987,8575.012832744944,8691.41436782348,9691.02386642183,9771.293848712074,10062.309282761851,10299.430255647125,10585.815114441502,10847.432801568222,11597.481749560962,11847.733867599325,11851.425655841213,11928.422201949705,12267.455154169471,12335.815693194316,12507.135867432244,12538.653836700085,12790.927479280688,13314.01068711854,13499.03688641342,13644.987870696437,13773.414739851676,14122.888129753335,14252.271189199222,14365.879837008442,14356.326603015461,14357.919452847347,14430.740600737623,14692.841527391467,14695.331505689275],"Transport":[0.0,587.1568338186586,2219.015072985601,1968.6861201569009,1775.2335656812672,3769.6913160791178,3121.5749886418234,4129.615767690901,5336.902224470028,5846.789342069512,5483.7879029109445,5763.236811572034,8572.00245906972,10347.450453281443,9642.954083499082,9928.086139939765,10897.13374225315,12078.497742455424,10971.802302611211,11517.24089335189,13611.642475940967,13719.627296007342,13650.698329813604,13239.39107282825,13786.559782113603,13986.357262113152,13422.327322867599,12959.186234390054,13156.331294156818,14763.783495259868,12716.617171573294,11979.34939833816,12573.537664606814,12605.633485796261,12468.690552793523,21283.45533888229,25889.010203935188,26989.796179962832,29699.705622732366,31973.195362588853,31825.132200616743,33791.85617485345,32030.33507455608,31535.83399237916,30675.00498880494,31460.547909602465,32585.89883844048,37950.35445395586,37645.19491946111,35101.09755393008,35188.30255644059,34712.28604535776,35831.13855837494,38743.58113610559,32275.388026611898,32260.758008417488,32701.507886661737,34094.17823943199,37661.76977694794,39964.06493687991,43265.36229377941,45489.43325416267,45622.412107408934,43529.882713152605,41884.79553839786,40540.855046470075,37997.63264287326,38508.820636745324,37726.75573680889,38699.200972731516,37357.24351129297,36752.19491571109,36223.90192513426,36544.16498749674,39439.43826486261,39050.901546508074,39875.58329773473,43530.271863562586,41062.07874942386,40763.51472926604,41493.80846439624,42253.943666165,43359.61356259672,43295.3810411735,43788.70698517159,43021.76525886945,43010.20382955951,45011.5003262497,44458.874347077704,48220.68639707248,46455.532892843585,46147.77381144005,46396.43060658797,46103.3632192264,46789.777930237135,46951.168507650866,47021.20817009111,46874.417268220255,47148.42978275927,46329.85891678513,46194.325304012025,48407.67842154485,48852.5523794543],"Information and Communication":[0.0,-438.7115211271634,-623.1876127808225,-498.8667650782863,1930.8009090577839,2208.9062845871167,2181.806659733846,720.4634357167996,666.1475942821777,694.1144522873693,740.1603008456067,687.2722253921175,3017.036862375983,3107.69568195729,3141.884441605135,3192.4652392630665,3178.230681608555,3187.8459365318836,3121.840754891789,3196.282994895055,3210.190990646269,3181.6060813529816,1049.3725799461397,1058.3813661963216,-1465.0706959876995,-1384.414174375563,-1884.2383306568945,-1857.241433918323,-1851.791771000521,-1804.3273512578405,-1785.0470608149892,-1583.3869973921283,-1597.4613793001163,-1597.4613793001163,-1545.9338861843692,-1469.7646686541666,-1430.8302077329718,-1352.924658272733,-1336.5773777719912,-1258.088777921219,-1236.2880025878444,-1213.0969159219023,-1279.2054785361438,-1301.0756848546685,-1265.935425492252,-1267.431710553522,-1193.975236761952,-1173.09843117223,-1907.1896460119858,-1920.8979109529762,-1574.7019236636304,-1570.966397013787,-1577.4391414074082,-1579.7006567811222,-1560.8559875810674,-1789.5781507790161,-2074.433122802963,-2096.879825737249,-2128.562877954758,-2035.904384080172,-2354.9553224124647,-2309.823736067212,-2026.087450684352,-1851.9727638853162,-1915.2283636540892,-1901.198299542659,-1824.0343206075784,-1714.7530757408838,-1662.457975879148,-1324.1859008598524,-1300.9119133475904,-1194.0629810449125,-1207.391754087622,-1212.1601234054633,-1232.5473784788594,-1224.4119559702003,-1196.2458960683332,-1189.8734857864533,-1205.3571079864719,-1146.2848095888264,-1050.9374665449936,-825.2255542338324,-793.5734771226212,-765.4355995479624,-767.1170496280779,-770.4364318925419,-718.7293030643027,-585.8961580198968,-576.2274742030647,-577.8784093803348,-560.1490597834988,-520.1447885698235,-375.17962960901775,-381.95980441070293,-392.673796544948,-192.6575097944636,-144.9389208968491,130.8549882385747,182.2981300198192,183.32080762151793,185.27371945894788,184.9741585751678,189.9401061594256],"Recreation, Sport and Culture":[0.0,81.93401039866079,-76.92362629215692,-149.60836904144003,-247.86761696766536,-95.62645006176734,-93.70568194637687,25.188047712344463,138.97394719165496,151.3932684699187,294.0281833172156,256.3533328259753,770.3307017571283,842.0826276424206,908.2183543355904,903.4502944207267,1112.885790060076,1176.0222761961168,1351.371394249283,1588.9880882139032,1735.3359640738922,1345.3442742006062,1403.568212464568,1346.734726480985,1364.1506928644492,1662.3890211621792,1591.0875847185953,1645.038198150254,1445.8448123999256,1707.06611523172,2104.6868090266485,2576.9208766549987,2597.413900442715,2598.5429378813833,2536.813439601894,2555.9513717670734,2450.7762278706655,2544.8691401845904,2622.3702830879056,2657.2686642076856,2787.442115066113,2812.1873190024,2783.245409067194,2641.4650113364564,2892.8835772081547,2802.7325841535517,2823.9095194910215,2894.7258368266853,2759.720313343639,2410.6118941637774,2431.215586337916,2486.3812876349325,2430.599511470905,2641.4901966197444,2838.4893139758583,2877.374690514605,3579.7080797326016,4041.9834145561495,4232.470714611028,4607.5781953143305,4891.483832347773,5132.248173834795,5244.242094812999,4915.4771094220305,4963.889673315245,5545.842600281341,5037.98934478524,5029.005137511103,5007.027777164048,4794.291441529815,4812.287147581189,4790.522947859107,4766.482732847166,4709.876820574105,5010.039093805578,5043.122463818865,5598.33176865814,5673.892694830511,5823.414826020936,6210.541434663259,7231.874294088814,7202.977866428176,7453.517717718232,7361.859865827909,7972.419869753619,8118.720446198457,8140.193027704199,8126.058906960793,8067.556894465756,8022.718085447687,7811.916482057773,7920.668232410368,7994.596943459348,7985.86921184418,8358.769967946952,8693.130439999986,8648.071256947926,8830.17191051932,8836.1008835546,8825.578122314675,8893.199536736869,9013.783751637913,8804.679936051734],"Education Services":[0.0,615.1707458664865,615.1710882615337,626.4589947737279,626.4845709817654,626.4921076006478,626.5176834354501,760.6181710012587,908.9662016895754,908.9662016895754,908.992219360893,838.7908335520856,838.7908335520856,1071.9797170792197,1071.9801592658478,1430.0977925478294,1430.0969313480023,1430.098568777616,1430.106384999572,1447.8765725882997,1633.0686139879424,1633.0686139879424,1633.075999572449,2025.8800492389266,2025.8785251657125,2314.946251066103,2314.946251066103,2591.4210316117696,2591.4229862833326,2591.4229862833326,2591.4229862833326,2701.0312069557017,2701.030698933709,2701.030698933709,2701.0311295258603,2701.0311295258603,2701.0315601149127,2701.0315601149127,2701.0315601149127,2701.03242128369,2701.03242128369,2701.03242128369,2701.8335596340885,2701.8335596340885,2701.8335596340885,2701.8335596340885,2992.843813613313,2995.682504987266,2995.682504987266,2995.682504987266,2995.682504987266,2995.682504987266,2995.682504987266,2995.682504987266,2995.682504987266,7126.302989093852,7125.83592776072,7125.684196151855,7125.684196151855,7381.24552945795,7380.897950960613,7381.516743902611,9314.286113924567,9314.286113924567,9314.286113924567,9314.286113924567,9314.286113924567,9314.286113924567,11056.361485510248,11056.361485510248,11055.74269256825,11416.418810225661,11416.418810225661,11416.418810225661,11415.800017283664,12712.01304316473,12712.013117160908,12712.013117160908,12712.013117160908,17404.74194225488,17404.74194225488,17404.74194225488,17404.74194225488,18399.44583956973,18399.44583956973,18400.064632511745,18400.064632511745,18772.997370321453,18772.998031329695,18772.997370321453,18772.997370321453,21642.299155880755,21647.431185807818,21647.431185807818,21647.431185807818,22507.216066586814,22507.216066586814,22507.216066586814,22507.216066586814,23712.912751420175,23712.912751420175,23712.91296171966,23712.912751420175],"Restaurants and Accommodation Services":[0.0,-80.05137195204874,4.93246897024422,471.8746807366234,693.1964652396061,1005.0923258618832,1101.3546937664141,1255.3682494130571,1371.9303580273302,1436.113743349427,1640.5067861699831,1685.2788121628769,1870.434309978757,1970.9321969739458,1806.1224233179155,2011.8954420645687,2193.092006183445,2405.082893592405,2865.8973645172555,2762.726074198959,2965.0319214781084,3037.5292165608375,3157.42108293199,3011.879986772937,3091.0880030578783,3380.0133009141005,3568.435118741249,3529.100367935066,3721.671824045451,3682.8065708370186,3816.7931392870387,4128.164586395622,4090.414046942771,4325.605220398438,4385.363305521114,4298.513395432047,3955.998597148348,3817.9163323670405,3801.4358027456174,3943.93835544629,3516.124857926456,3490.371589605913,3780.4118645058047,4047.3104204412866,4408.83815361644,4362.9041644626095,4912.456477620088,4471.933357173032,4892.557114223378,4944.203726419736,4966.020503677419,4979.5066827399905,5366.126600965725,4758.7120202213155,5505.2283477395595,6416.8949995976545,7661.258688717586,8098.559842485485,8134.51761517766,8996.768360180335,9291.561706872988,10054.442798422851,10547.834410942907,10968.827447632755,10990.156678485711,10774.866991967827,10711.111175087204,11272.232163091976,12558.159664820814,12146.77443717352,12345.64746068585,13518.025331945617,13520.254405567595,14047.1182601854,13948.22190425237,14359.548490452038,14463.363344997519,14287.850956847411,14625.626639608507,16131.332669673688,16443.49881419345,16413.738711840793,16626.271510119484,16944.728155559304,16919.323101697,16868.143675373234,17022.985020898985,17602.005753770187,17701.847547890968,18335.174088757973,18702.882388183138,19368.298008742822,19796.965020411353,20011.348274504584,20643.159790622238,20990.912513699866,21217.83388957114,21730.004607235554,21862.24074717398,22146.80398389666,22240.081621802194,22480.675462745676,22584.342752828812],"Insurance and Financial Services":[0.0,12.615875517247105,10.10464019249496,108.3541271439485,137.99983088906376,168.7540821631155,168.7540821631155,163.273366014651,166.31557925440543,673.3534608656693,652.2307731491918,573.5565633274263,2034.2244666900253,2088.831324150513,2114.981379842053,2096.022331908762,2095.918156124707,2104.1237352970734,2074.0292435412657,2074.0292435412657,2109.729685439324,469.627155733639,390.3039766094587,389.48838491459867,1851.2430219459,2965.509956387063,3247.9083522898686,1446.2481532081988,624.7549073669339,657.4704063368615,2571.5331248276516,2571.5331248276516,2571.5331248276516,2571.5331248276516,2169.2874983848365,2169.2874983848365,2172.4633673872904,2172.2950225536842,2172.2950225536842,2097.983002076752,2102.0113653340773,2102.0113653340773,2102.0113653340773,2102.0113653340773,2102.0113653340773,2102.0113653340773,2034.8345371940602,2034.8345371940602,2320.298176058267,2336.3046736509505,2611.340158528729,2612.5610748958447,2612.7160958799036,2612.7160958799036,2612.7160958799036,2613.491200800204,2613.491200800204,2597.8944103285367,2609.713127589848,2544.610281856383,2574.9691799392963,2583.3193150066563,2583.3193150066563,2588.40284715369,2588.40284715369,2588.40284715369,2555.4885538746685,2555.3487008363554,2555.3487008363554,3437.7815855696795,3437.7815855696795,3437.7815855696795,3437.7815855696795,3436.231375729079,3433.8586355693856,3742.301503793372,3738.9427158054077,3740.751293952775,3756.4021423800036,3759.25614409508,4431.7085225834335,4434.378178030005,4434.378178030005,4434.378178030005,4427.620469853372,4294.04844669598,4294.04844669598,4315.68219663706,5572.986629815899,5572.986629815899,7228.345014120895,7228.345014120895,7406.985966284797,7406.543932078337,7406.543932078337,7406.543932078337,7988.298357620794,7988.298357620794,7989.208648293907,7986.544201963595,7987.685482809794,7987.685482809794,10372.039464522974],"Personal Care, Social Protection and Miscellaneous Goods":[0.0,105.71655684198379,-56.192429797339514,-13.07265571120776,9.556691459945302,153.21842709653188,180.8862654546384,341.9402737612048,491.435887556664,316.5138994801374,607.3104587375968,773.5653346803404,819.380839749213,1079.8033732987587,1294.4743932663632,1239.480344816304,1213.6668840936536,1292.2467505957206,1463.2491404414188,1815.222735717095,2283.0177452918933,2430.1332311798137,2491.2012783947316,2614.624975417846,2973.8483440197692,3184.1490127523844,3748.2989890761137,3915.432289693419,4054.38444261397,4137.92328088555,4092.544850197104,4071.3904821558585,4151.745263213365,4145.713315672838,4385.336046387874,4478.057401995532,4556.954794608757,4750.62375726898,4748.183698534513,4712.039198955206,5075.2293490787,5049.535152302517,5092.352874935028,5018.766284757035,5043.973517819822,5343.523547689268,5489.396999389325,5402.22925553545,5627.824550653358,5617.255239773137,6131.200027395291,6091.193889331273,6165.405965802221,6408.75154640752,7048.639422188507,7237.137650932229,7269.8243502488185,6861.893540347617,7399.618529385602,7701.77025226162,8248.340934654001,8885.005925651798,9656.870343232253,9781.926431087215,10558.461139521649,11042.587028793672,10961.63626626293,11450.21263869242,11627.303430322576,11924.425265237684,12167.319634369052,12496.542857816457,12913.41901641675,12982.948555799914,13136.824486843867,13397.093120324256,13544.230833014268,13943.169912539865,14431.21394205096,14759.282216430647,14872.085297888658,14862.567348089826,15068.847930605141,15393.85651954954,15601.778200559575,15661.438761558473,15870.928839910139,15966.841005712271,15763.630461392064,15865.430072379731,15863.631963626749,15927.61667073753,15950.257341670642,16007.026702888492,16031.61264078849,16165.6060546275,16459.288013385973,16880.48097511623,16790.406861787593,16766.905673211262,17060.972802567332,17128.13211369966,17044.107455899277]},"essential_annual":[null,null,null,null,null,null,null,null,null,null,null,null,4.1926,4.2485,3.5008,3.4242,3.8022,3.1711,3.1449,2.5262,2.9251,2.7418,2.7188,2.2864,2.1991,2.3299,2.4199,2.7947,2.7636,3.3256,3.2885,3.4742,2.6159,2.9151,2.7899,4.6045,4.6886,4.3009,4.3554,4.6574,4.2216,3.8989,3.8041,4.76,4.7516,4.3445,4.332,3.7016,3.2287,2.7278,2.6763,2.1241,2.8796,3.2057,2.5975,3.5031,3.8368,4.924,6.0691,6.1052,7.294,8.5636,9.8248,10.0975,9.4965,8.8962,9.5907,7.3935,7.7325,6.7343,5.1153,3.9202,3.1453,2.7657,1.7812,2.2417,2.9264,3.5591,3.6255,5.3803,4.9845,5.0214,5.6862,6.2519,5.9267,5.4389,5.1139,4.993,4.5817,4.6848,4.7252,4.3741,4.1674,4.2746,4.189,4.3048,4.1759,4.2068,4.2355,3.7764,3.56,3.5955,3.8482],"discretionary_annual":[null,null,null,null,null,null,null,null,null,null,null,null,4.8031,5.0926,5.4156,4.9291,4.0094,3.7598,4.0836,4.2373,4.6925,3.0245,1.7455,2.0706,0.3528,1.073,1.0902,0.1038,-0.4749,-0.5622,0.3745,0.699,0.3218,1.6528,2.2318,1.9745,1.6666,0.8186,0.6804,1.7616,2.3448,2.4406,1.064,0.7177,0.6791,0.6959,0.9552,0.8457,0.9152,0.783,1.2941,1.3823,1.4611,1.5726,2.1085,2.8151,3.6084,3.9887,4.2796,5.1878,5.4115,5.8144,5.8824,5.9214,6.2181,6.257,5.5359,5.1823,4.676,4.7979,4.4488,3.8981,3.827,3.5298,3.256,3.4279,3.4124,3.252,3.7406,3.7952,4.4891,4.0545,4.2566,4.2356,4.2873,4.2639,4.0086,3.8497,4.0667,4.0385,5.0234,4.8096,4.0712,3.9721,3.7706,3.8022,4.0196,4.2753,4.1265,3.9645,3.4832,3.4362,3.3758],"forecast_dates":["2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2027-01"],"forecast_vals":[139.189,139.5557,139.9223,140.289,140.6556,141.0223,141.3889,141.7556,142.1222,142.4889,142.8556,143.2222],"driver_data":[{"category":"Food and Non-Alcoholic Beverages","annual_pct":3.01,"weight":270.54,"contribution":0.82},{"category":"Education Services","annual_pct":7.58,"weight":57.96,"contribution":0.44},{"category":"Restaurants and Accommodation Services","annual_pct":4.38,"weight":87.38,"contribution":0.38},{"category":"Housing, Water, Electricity, Gas and Other Fuels","annual_pct":3.05,"weight":104.16,"contribution":0.32},{"category":"Insurance and Financial Services","annual_pct":12.35,"weight":22.8,"contribution":0.28},{"category":"Transport","annual_pct":1.84,"weight":104.55,"contribution":0.19},{"category":"Health","annual_pct":3.75,"weight":47.47,"contribution":0.18},{"category":"Clothing and Footwear","annual_pct":1.78,"weight":69.77,"contribution":0.12},{"category":"Personal Care, Social Protection and Miscellaneous Goods","annual_pct":2.0,"weight":54.04,"contribution":0.11},{"category":"Information and Communication","annual_pct":2.15,"weight":44.32,"contribution":0.1},{"category":"Recreation, Sport and Culture","annual_pct":2.08,"weight":49.85,"contribution":0.1},{"category":"Furnishings, Household Equipment and Routine Household","annual_pct":1.24,"weight":48.37,"contribution":0.06},{"category":"Alcoholic Beverages, Tobacco and Narcotics","annual_pct":1.03,"weight":38.8,"contribution":0.04}],"essential_cats":["Food and Non-Alcoholic Beverages","Housing, Water, Electricity, Gas and Other Fuels","Health","Education Services","Transport"],"discretionary_cats":["Alcoholic Beverages, Tobacco and Narcotics","Clothing and Footwear","Furnishings, Household Equipment and Routine Household","Information and Communication","Recreation, Sport and Culture","Restaurants and Accommodation Services","Insurance and Financial Services","Personal Care, Social Protection and Miscellaneous Goods"],"basket_ugx":800000,"base_date":"2017-07"}
+;
+
+// ── HELPERS ──────────────────────────────────────────────────────
+const fmtUGX = v => 'UGX ' + Math.round(v).toLocaleString();
+const fmtPct = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+const CAT_COLORS = [
+  '#f5a623','#e84b4b','#4bade8','#4be8a0','#a855f7',
+  '#f97316','#06b6d4','#84cc16','#ec4899','#f43f5e',
+  '#22d3ee','#a3e635','#fb923c'
+];
+const SHORT = {
+  'Food and Non-Alcoholic Beverages': 'Food',
+  'Alcoholic Beverages, Tobacco and Narcotics': 'Alcohol/Tobacco',
+  'Clothing and Footwear': 'Clothing',
+  'Housing, Water, Electricity, Gas and Other Fuels': 'Housing/Utilities',
+  'Furnishings, Household Equipment and Routine Household': 'Furnishings',
+  'Health': 'Health',
+  'Transport': 'Transport',
+  'Information and Communication': 'Info & Comm',
+  'Recreation, Sport and Culture': 'Recreation',
+  'Education Services': 'Education',
+  'Restaurants and Accommodation Services': 'Restaurants',
+  'Insurance and Financial Services': 'Insurance',
+  'Personal Care, Social Protection and Miscellaneous Goods': 'Personal Care'
+};
+const cats = Object.keys(D.categories);
+
+// Chart defaults
+Chart.defaults.color = '#6b7a9b';
+Chart.defaults.borderColor = '#1e2d4a';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init() {
+  // Header KPIs
+  const lastIdx = D.grand_total.length - 1;
+  document.getElementById('hdr-cpi').textContent = D.grand_total[lastIdx].toFixed(1);
+  const lastAnn = D.annual_pct.filter(x => x !== null);
+  document.getElementById('hdr-annual').textContent = lastAnn[lastAnn.length-1].toFixed(2) + '%';
+  const growth = ((D.grand_total[lastIdx] / D.grand_total[0]) - 1) * 100;
+  document.getElementById('hdr-growth').textContent = '+' + growth.toFixed(1) + '%';
+  const lastBurden = D.cost_burdens[lastIdx];
+  document.getElementById('hdr-burden').textContent = '+' + Math.round(lastBurden/1000) + 'K';
+
+  buildOverview();
+  buildDrivers();
+  buildCalculator();
+  buildEssential();
+  buildForecast();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────
+function buildOverview() {
+  // Headline dual axis
+  new Chart(document.getElementById('c-headline'), {
+    type: 'line',
+    data: {
+      labels: D.dates,
+      datasets: [
+        { label: 'CPI Index', data: D.grand_total, borderColor: '#f5a623', borderWidth: 2,
+          pointRadius: 0, yAxisID: 'y', fill: false, tension: 0.3 },
+        { label: 'Annual %', data: D.annual_pct.map((v,i) => v), borderColor: '#e84b4b',
+          borderWidth: 1.5, pointRadius: 0, yAxisID: 'y2', fill: false,
+          borderDash: [4,3], tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index' },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { family: "'Space Mono', monospace", size: 10 } } } },
+      scales: {
+        x: { grid: { color: '#1a2540' }, ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { font: { size: 10 } }, title: { display: true, text: 'CPI Index', font: { size: 10 }, color: '#f5a623' } },
+        y2: { position: 'right', grid: { display: false }, ticks: { font: { size: 10 }, callback: v => v ? v.toFixed(1)+'%' : '' },
+          title: { display: true, text: 'Annual %', font: { size: 10 }, color: '#e84b4b' } }
+      }
+    }
+  });
+
+  // Monthly pct bar
+  new Chart(document.getElementById('c-monthly'), {
+    type: 'bar',
+    data: {
+      labels: D.dates,
+      datasets: [{ label: 'Monthly % Change', data: D.monthly_pct,
+        backgroundColor: D.monthly_pct.map(v => v < 0 ? 'rgba(232,75,75,0.7)' : 'rgba(75,173,232,0.6)'),
+        borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { callback: v => v.toFixed(1)+'%', font: { size: 9 } } }
+      }
+    }
+  });
+
+  // Spaghetti
+  const spaghDs = cats.map((cat, i) => ({
+    label: SHORT[cat] || cat,
+    data: D.categories[cat],
+    borderColor: CAT_COLORS[i],
+    borderWidth: 1.2,
+    pointRadius: 0,
+    tension: 0.3,
+    fill: false
+  }));
+  new Chart(document.getElementById('c-spaghetti'), {
+    type: 'line',
+    data: { labels: D.dates, datasets: spaghDs },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+// ── DRIVERS ──────────────────────────────────────────────────────
+function buildDrivers() {
+  const isEssential = cat => D.essential_cats.includes(cat);
+  const maxContrib = Math.max(...D.driver_data.map(d => d.contribution));
+  const tbody = document.getElementById('driver-tbody');
+  tbody.innerHTML = D.driver_data.map((d, i) => {
+    const pct = (d.contribution / maxContrib) * 100;
+    const ess = isEssential(d.category);
+    return `<tr>
+      <td class="cat-name">${d.category}<span class="cat-badge ${ess ? 'essential' : 'discretionary'}">${ess ? 'Essential' : 'Discret.'}</span></td>
+      <td style="color:var(--muted);font-size:12px;font-family:'Space Mono',monospace">${d.weight.toFixed(0)}</td>
+      <td class="pct-val" style="text-align:left">${d.annual_pct.toFixed(2)}%</td>
+      <td style="width:50px;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace">${d.weight.toFixed(0)}/1000</td>
+      <td class="bar-cell"><div class="mini-bar-bg"><div class="mini-bar" style="width:${pct}%"></div></div></td>
+      <td class="pct-val">${d.contribution.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  // Cumulative growth bar
+  const cumGrowth = cats.map(cat => {
+    const vals = D.categories[cat];
+    const v0 = vals[0], vLast = vals[vals.length-1];
+    return { cat: SHORT[cat] || cat, growth: ((vLast/v0)-1)*100 };
+  }).sort((a,b) => b.growth - a.growth);
+
+  new Chart(document.getElementById('c-cumulative-bar'), {
+    type: 'bar',
+    data: {
+      labels: cumGrowth.map(d => d.cat),
+      datasets: [{ data: cumGrowth.map(d => d.growth),
+        backgroundColor: cumGrowth.map((d,i) => CAT_COLORS[i]),
+        borderWidth: 0 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' +' + c.raw.toFixed(1) + '%' } } },
+      scales: {
+        x: { grid: { color: '#1a2540' }, ticks: { callback: v => v.toFixed(0)+'%', font: { size: 9 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Category trend line
+  const selCats = ['Food and Non-Alcoholic Beverages','Transport','Education Services','Housing, Water, Electricity, Gas and Other Fuels','Health'];
+  const annualByIdx = (cat) => D.dates.map((d, i) => {
+    const vals = D.categories[cat];
+    if (i < 12 || !vals[i] || !vals[i-12]) return null;
+    return ((vals[i]/vals[i-12])-1)*100;
+  });
+
+  new Chart(document.getElementById('c-category-trend'), {
+    type: 'line',
+    data: {
+      labels: D.dates,
+      datasets: selCats.map((cat, i) => ({
+        label: SHORT[cat],
+        data: annualByIdx(cat),
+        borderColor: [CAT_COLORS[0],CAT_COLORS[6],CAT_COLORS[9],CAT_COLORS[3],CAT_COLORS[5]][i],
+        borderWidth: 1.8, pointRadius: 0, tension: 0.3, fill: false
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index' },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, family: "'Space Mono', monospace" } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { callback: v => v ? v.toFixed(1)+'%' : '0%', font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+// ── CALCULATOR ──────────────────────────────────────────────────
+let burdenChart, burdenBreakChart;
+function buildCalculator() {
+  // Populate selects
+  const fromSel = document.getElementById('from-date');
+  const toSel = document.getElementById('to-date');
+  D.dates.forEach((d, i) => {
+    fromSel.add(new Option(d, i));
+    toSel.add(new Option(d, i));
+  });
+  fromSel.value = 0;
+  toSel.value = D.dates.length - 1;
+
+  // Burden line
+  burdenChart = new Chart(document.getElementById('c-burden'), {
+    type: 'line',
+    data: {
+      labels: D.dates,
+      datasets: [{ label: 'Extra UGX / Month', data: D.cost_burdens,
+        borderColor: '#4be8a0', borderWidth: 2, pointRadius: 0,
+        fill: true, backgroundColor: 'rgba(75,232,160,0.07)', tension: 0.3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' +UGX ' + Math.round(c.raw).toLocaleString() } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { callback: v => 'UGX ' + (v/1000).toFixed(0)+'K', font: { size: 9 } } }
+      }
+    }
+  });
+
+  // Burden breakdown (last month)
+  const lastBurdens = cats.map(cat => ({ cat: SHORT[cat]||cat, val: D.cat_cost_burdens[cat][D.cat_cost_burdens[cat].length-1] }))
+                          .sort((a,b) => b.val - a.val);
+  burdenBreakChart = new Chart(document.getElementById('c-burden-breakdown'), {
+    type: 'bar',
+    data: {
+      labels: lastBurdens.map(d => d.cat),
+      datasets: [{ data: lastBurdens.map(d => d.val),
+        backgroundColor: lastBurdens.map((d,i) => d.val < 0 ? '#e84b4b' : CAT_COLORS[i]),
+        borderWidth: 0 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' UGX ' + Math.round(c.raw).toLocaleString() } } },
+      scales: {
+        x: { grid: { color: '#1a2540' }, ticks: { callback: v => (v/1000).toFixed(0)+'K', font: { size: 9 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+
+  calcBurden();
+}
+
+function calcBurden() {
+  const basket = parseFloat(document.getElementById('basket-input').value) || 800000;
+  const fromIdx = parseInt(document.getElementById('from-date').value);
+  const toIdx = parseInt(document.getElementById('to-date').value);
+
+  const cpiFrom = D.grand_total[fromIdx];
+  const cpiTo = D.grand_total[toIdx];
+  const factor = cpiTo / cpiFrom;
+  const newCost = basket * factor;
+  const extra = newCost - basket;
+  const pctChg = ((factor - 1) * 100);
+
+  document.getElementById('calc-extra').textContent = 'UGX ' + Math.round(Math.abs(extra)).toLocaleString();
+  document.getElementById('calc-label').textContent = (extra >= 0 ? 'Additional' : 'Savings') + ' UGX needed per month (' + D.dates[fromIdx] + ' → ' + D.dates[toIdx] + ')';
+  document.getElementById('calc-pct-text').textContent = `Original basket: UGX ${Math.round(basket).toLocaleString()} → Now costs: UGX ${Math.round(newCost).toLocaleString()} (${pctChg >= 0 ? '+' : ''}${pctChg.toFixed(1)}%)`;
+
+  // Per-category chips
+  const chips = cats.map(cat => {
+    const catVals = D.categories[cat];
+    const w = D.weights[cat];
+    const share = (w / 1000) * basket;
+    const cf = catVals[fromIdx], ct = catVals[toIdx];
+    if (!cf || !ct) return null;
+    const catExtra = share * ((ct/cf) - 1);
+    return { cat: SHORT[cat]||cat, val: catExtra };
+  }).filter(Boolean).sort((a,b) => Math.abs(b.val) - Math.abs(a.val)).slice(0, 8);
+
+  document.getElementById('calc-chips').innerHTML = chips.map(c =>
+    `<div class="calc-chip"><span class="chip-cat">${c.cat}</span><span class="chip-val">${c.val >= 0 ? '+' : ''}UGX ${Math.round(c.val).toLocaleString()}</span></div>`
+  ).join('');
+}
+
+// ── ESSENTIAL ──────────────────────────────────────────────────
+let essVis = true, discVis = true;
+function buildEssential() {
+  const validDates = D.dates.filter((_, i) => D.essential_annual[i] !== null);
+  const validEss = D.essential_annual.filter(v => v !== null);
+  const validDisc = D.discretionary_annual.filter(v => v !== null);
+
+  window._essDiscChart = new Chart(document.getElementById('c-essdisc'), {
+    type: 'line',
+    data: {
+      labels: validDates,
+      datasets: [
+        { label: 'Essential Goods', data: validEss, borderColor: '#4be8a0', borderWidth: 2.5,
+          pointRadius: 0, fill: true, backgroundColor: 'rgba(75,232,160,0.08)', tension: 0.3 },
+        { label: 'Discretionary', data: validDisc, borderColor: '#4bade8', borderWidth: 2.5,
+          pointRadius: 0, fill: true, backgroundColor: 'rgba(75,173,232,0.06)', tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index' },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { family: "'Space Mono', monospace", size: 10 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { callback: v => v.toFixed(1)+'%', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Essential cats
+  new Chart(document.getElementById('c-ess-cats'), {
+    type: 'line',
+    data: {
+      labels: D.dates,
+      datasets: D.essential_cats.map((cat, i) => ({
+        label: SHORT[cat],
+        data: D.categories[cat],
+        borderColor: ['#f5a623','#4be8a0','#e84b4b','#a855f7','#06b6d4'][i],
+        borderWidth: 1.8, pointRadius: 0, tension: 0.3, fill: false
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+
+  // Discretionary cats
+  new Chart(document.getElementById('c-disc-cats'), {
+    type: 'line',
+    data: {
+      labels: D.dates,
+      datasets: D.discretionary_cats.map((cat, i) => ({
+        label: SHORT[cat],
+        data: D.categories[cat],
+        borderColor: CAT_COLORS[i+5],
+        borderWidth: 1.8, pointRadius: 0, tension: 0.3, fill: false
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+
+  // Summary table
+  const periods = [[0, 35, '2017–2020'], [36, 66, '2020–2022'], [67, 78, '2023'], [79, 102, '2024–2026']];
+  const avg = (arr, from, to) => {
+    const vals = arr.slice(from, to+1).filter(v => v !== null);
+    return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : '—';
+  };
+  const rows = periods.map(([f, t, lbl]) => `
+    <tr>
+      <td style="font-family:'Space Mono',monospace;color:var(--gold);font-size:12px;padding:8px 12px;">${lbl}</td>
+      <td style="color:var(--accent4);font-family:'Space Mono',monospace;font-size:13px;padding:8px 16px;">${avg(D.essential_annual,f,t)}%</td>
+      <td style="color:var(--accent3);font-family:'Space Mono',monospace;font-size:13px;padding:8px 16px;">${avg(D.discretionary_annual,f,t)}%</td>
+      <td style="color:var(--muted);font-size:12px;padding:8px 12px;">${parseFloat(avg(D.essential_annual,f,t)) > parseFloat(avg(D.discretionary_annual,f,t)) ? '<span style="color:var(--accent2)">Essentials higher</span>' : '<span style="color:var(--accent3)">Discretionary higher</span>'}</td>
+    </tr>`).join('');
+  document.getElementById('summary-table').innerHTML = `
+    <table class="driver-table">
+      <thead><tr><th>Period</th><th style="color:var(--accent4)">Essential Avg Inflation</th><th style="color:var(--accent3)">Discretionary Avg Inflation</th><th>Verdict</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function toggleEssential() { essVis = !essVis; window._essDiscChart.data.datasets[0].hidden = !essVis; window._essDiscChart.update(); }
+function toggleDiscretionary() { discVis = !discVis; window._essDiscChart.data.datasets[1].hidden = !discVis; window._essDiscChart.update(); }
+
+// ── FORECAST ──────────────────────────────────────────────────
+function buildForecast() {
+  const histDates = D.dates;
+  const fcstDates = D.forecast_dates;
+  const allDates = [...histDates, ...fcstDates];
+
+  const histData = D.grand_total.map((v,i) => ({ x: i, y: v }));
+  const fcstStart = histDates.length;
+  const fcstData = D.forecast_vals.map((v,i) => ({ x: fcstStart+i, y: v }));
+  const bandHigh = D.forecast_vals.map((v,i) => ({ x: fcstStart+i, y: v*1.02 }));
+  const bandLow = D.forecast_vals.map((v,i) => ({ x: fcstStart+i, y: v*0.98 }));
+
+  new Chart(document.getElementById('c-forecast'), {
+    type: 'line',
+    data: {
+      labels: allDates,
+      datasets: [
+        { label: 'Historical CPI', data: [...D.grand_total, ...new Array(fcstDates.length).fill(null)],
+          borderColor: '#f5a623', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+        { label: 'Forecast', data: [...new Array(histDates.length-1).fill(null), D.grand_total[histDates.length-1], ...D.forecast_vals],
+          borderColor: '#4bade8', borderWidth: 2, borderDash: [6,4],
+          pointRadius: [0,0,0,0,0,0,0,0,0,0,0,0,0,5], fill: false, tension: 0.3 },
+        { label: 'Upper Band (+2%)', data: [...new Array(histDates.length-1).fill(null), D.grand_total[histDates.length-1], ...D.forecast_vals.map(v=>v*1.02)],
+          borderColor: 'rgba(75,173,232,0.25)', borderWidth: 1, borderDash: [2,4],
+          pointRadius: 0, fill: false, tension: 0.3 },
+        { label: 'Lower Band (-2%)', data: [...new Array(histDates.length-1).fill(null), D.grand_total[histDates.length-1], ...D.forecast_vals.map(v=>v*0.98)],
+          borderColor: 'rgba(75,173,232,0.25)', borderWidth: 1, borderDash: [2,4],
+          pointRadius: 0, fill: '-1', backgroundColor: 'rgba(75,173,232,0.06)', tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index' },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { family: "'Space Mono', monospace", size: 10 } } } },
+      scales: {
+        x: { grid: { color: '#1a2540' }, ticks: { maxTicksLimit: 14, font: { size: 9 } } },
+        y: { grid: { color: '#1a2540' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Forecast table
+  const tbl = document.getElementById('forecast-table');
+  tbl.innerHTML = `<thead><tr>
+    <th>Month</th><th style="text-align:right">Forecast CPI</th><th style="text-align:right">Lower (-2%)</th><th style="text-align:right">Upper (+2%)</th><th style="text-align:right">Est. Annual %</th>
+    </tr></thead><tbody>` +
+    D.forecast_dates.map((d,i) => {
+      const v = D.forecast_vals[i];
+      const base = D.grand_total[D.grand_total.length-1-11+i] || D.grand_total[D.grand_total.length-1];
+      const ann = ((v/base)-1)*100;
+      return `<tr>
+        <td style="font-family:'Space Mono',monospace;color:var(--accent3);font-size:12px">${d}</td>
+        <td class="pct-val">${v.toFixed(2)}</td>
+        <td style="color:var(--muted);text-align:right;font-family:'Space Mono',monospace;font-size:11px">${(v*0.98).toFixed(2)}</td>
+        <td style="color:var(--muted);text-align:right;font-family:'Space Mono',monospace;font-size:11px">${(v*1.02).toFixed(2)}</td>
+        <td style="color:var(--accent2);text-align:right;font-family:'Space Mono',monospace;font-size:11px">${ann.toFixed(2)}%</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+}
+
+init();
+</script>
+</body>
+</html>
